@@ -1,0 +1,76 @@
+{
+  "_role": "Authoring index: mirrors BootScene preload paths, memory videos, and music tracks. Runtime loads from BootScene + memoryMedia.js.",
+  "sprites": {
+    "player": {
+      "heroIdle": "assets/sprites/player/hero_idle.svg",
+      "heroLv2": "assets/sprites/player/hero_lv2.svg",
+      "heroLv3": "assets/sprites/player/hero_lv3.svg",
+      "heroLv4": "assets/sprites/player/hero_lv4.svg",
+      "heroLv5": "assets/sprites/player/hero_lv5.svg",
+      "heroSheetOptional": "assets/sprites/player/hero_sheet.png"
+    },
+    "enemies": {
+      "meadowScout": "assets/sprites/enemies/meadow_scout.svg",
+      "sapSlime": "assets/sprites/enemies/sap_slime.svg",
+      "thornSentry": "assets/sprites/enemies/thorn_sentry.svg",
+      "golfCaddieBot": "assets/sprites/enemies/golf_caddie_bot.svg",
+      "golfBunkerMite": "assets/sprites/enemies/golf_bunker_mite.svg",
+      "golfFlagWisp": "assets/sprites/enemies/golf_flag_wisp.svg",
+      "marketCrateCrab": "assets/sprites/enemies/market_crate_crab.svg",
+      "marketSignSprite": "assets/sprites/enemies/market_sign_sprite.svg",
+      "marketNeonOrb": "assets/sprites/enemies/market_neon_orb.svg",
+      "backyardMowerBot": "assets/sprites/enemies/backyard_mower_bot.svg",
+      "backyardLanternBug": "assets/sprites/enemies/backyard_lantern_bug.svg",
+      "backyardFenceImp": "assets/sprites/enemies/backyard_fence_imp.svg"
+    },
+    "bosses": {
+      "memoryWarden": "assets/sprites/bosses/memory_warden.svg",
+      "trenchOverlord": "assets/sprites/bosses/boss_trench_overlord.svg",
+      "vaultTyrant": "assets/sprites/bosses/boss_vault_tyrant.svg",
+      "soundArchitect": "assets/sprites/bosses/boss_sound_architect.svg"
+    },
+    "effects": {
+      "slashLv1": "assets/sprites/effects/slash_lv1.svg",
+      "slashLv2": "assets/sprites/effects/slash_lv2.svg",
+      "slashLv3": "assets/sprites/effects/slash_lv3.svg",
+      "slashLv4": "assets/sprites/effects/slash_lv4.svg",
+      "crystalShot": "assets/sprites/effects/crystal_shot.svg",
+      "crystalExplosion": "assets/sprites/effects/crystal_explosion.svg",
+      "yellowCrystal": "assets/sprites/effects/yellow_crystal.svg"
+    }
+  },
+  "ui": {
+    "heartFull": "assets/ui/heart_full.svg",
+    "heartEmpty": "assets/ui/heart_empty.svg",
+    "shrine": "assets/ui/shrine_icon.svg",
+    "relic": "assets/ui/relic_icon.svg",
+    "popupFrame": "assets/ui/popup_frame.svg"
+  },
+  "backgrounds": {
+    "overworld": "assets/tiles/zone3_commerce_bg.svg",
+    "dungeonFatherChildhood": "assets/tiles/zone1_meadow_bg.svg",
+    "dungeonMyChildhood": "assets/tiles/zone2_golf_bg.svg",
+    "dungeonModernDay": "assets/tiles/zone4_backyard_bg.svg",
+    "finalArena": "assets/tiles/final_arena_bg.svg"
+  },
+  "media": {
+    "memoryFatherChildhood": "assets/media/popup_01.mp4",
+    "memoryMyChildhood": "assets/media/popup_02.mp4",
+    "memoryMyChildhoodAlt": "assets/media/popup_02.mov",
+    "memoryModernDay": "assets/media/popup_03.mp4",
+    "memoryModernDayAlt": "assets/media/popup_03.mov",
+    "popup04Unused": "assets/media/popup_04.mp4",
+    "popup5Secret": "assets/media/popup_05_secret.mp4",
+    "popup5SecretAlt": "assets/media/popup_05_secret.mov",
+    "finalVideo": "assets/media/final_video.mp4",
+    "finalVideoAlt": "assets/media/final_video.mov"
+  },
+  "audio": {
+    "title": "assets/audio/Flying-HighFinal.wav",
+    "zone1": "assets/audio/Flying-HighFinal.wav",
+    "zone2": "assets/audio/Two BirdsFinal.wav",
+    "zone3": "assets/audio/FreefallFinal.wav",
+    "zone4": "assets/audio/Into-DreamlandsFinal.wav",
+    "final": "assets/audio/Into-DreamlandsFinal.wav"
+  }
+}

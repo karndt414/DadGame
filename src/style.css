@@ -1,0 +1,86 @@
+:root {
+  color-scheme: dark;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(104, 134, 98, 0.32), transparent 60%),
+    radial-gradient(circle at top, #2d3d2f 0%, #121514 45%, #090b0b 100%);
+  min-height: 100vh;
+  color: #f3f3e8;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(10px, 2.2vw, 22px);
+}
+
+.game-shell {
+  width: min(1380px, 100%);
+  display: grid;
+  gap: clamp(8px, 1.2vw, 14px);
+}
+
+.game-header {
+  text-align: center;
+  margin: 0;
+  background: linear-gradient(180deg, rgba(13, 22, 20, 0.72), rgba(8, 14, 13, 0.58));
+  border: 1px solid rgba(126, 162, 118, 0.52);
+  border-radius: 12px;
+  padding: clamp(8px, 1.2vw, 12px) clamp(10px, 1.8vw, 16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+.game-header h1 {
+  margin: 0;
+  font-size: clamp(20px, 2.8vw, 34px);
+  letter-spacing: 0.03em;
+  color: #e7d39a;
+}
+
+.game-header p {
+  margin: 6px 0 0;
+  font-size: clamp(12px, 1.2vw, 14px);
+  color: #d7ddd2;
+}
+
+#game-container {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  max-width: 100%;
+  background: #0e1211;
+  border: 2px solid #556a4b;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.45);
+  position: relative;
+}
+
+#game-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 760px) {
+  #app {
+    padding: 8px;
+  }
+
+  .game-header h1 {
+    letter-spacing: 0.01em;
+  }
+
+  .game-header p {
+    font-size: 12px;
+  }
+}

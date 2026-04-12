@@ -1,0 +1,75 @@
+{
+  "format": "multiple-choice",
+  "rules": {
+    "mandatory": false,
+    "onCorrect": ["heal_1", "grant_random_powerup", "reveal_secret_hint"],
+    "onWrong": ["lose_1_heart_or_remove_temp_buff", "show_hint", "allow_retry"]
+  },
+  "questions": [
+    {
+      "id": "q01_mini_golf",
+      "zone": "my_childhood",
+      "prompt": "In my childhood era, which event belongs in this memory dungeon?",
+      "choices": [
+        "My 5th birthday party",
+        "High school graduation",
+        "Family winter trip",
+        "First job celebration"
+      ],
+      "correctIndex": 0,
+      "hint": "Think of a playful birthday moment from early years."
+    },
+    {
+      "id": "q02_adventure_game",
+      "zone": "father_childhood",
+      "prompt": "Father Childhood Dungeon: which memory tone defines this era?",
+      "choices": [
+        "A classic adventure spirit with discovery and courage",
+        "A futuristic stock market simulation",
+        "A strict exam preparation montage",
+        "A road trip speedrun"
+      ],
+      "correctIndex": 0,
+      "hint": "Think old-school hero energy and wonder."
+    },
+    {
+      "id": "q03_grilling",
+      "zone": "modern_day",
+      "prompt": "Modern Day Dungeon: what anchors this present-day memory?",
+      "choices": [
+        "Grilling",
+        "Snowboarding",
+        "Fishing tournament",
+        "Wood carving"
+      ],
+      "correctIndex": 0,
+      "hint": "It is the one that fills the yard with dinner-time smoke and laughter."
+    },
+    {
+      "id": "q04_prop_crew",
+      "zone": "commerce_citadel",
+      "prompt": "Which school activity memory should appear in-game?",
+      "choices": [
+        "Prop crew for marching band",
+        "Debate club finals",
+        "Chess captain",
+        "Robotics nationals"
+      ],
+      "correctIndex": 0,
+      "hint": "It supported the band from behind the scenes."
+    },
+    {
+      "id": "q05_fill_custom",
+      "zone": "any",
+      "prompt": "ADD YOUR 5TH MILESTONE QUESTION HERE",
+      "choices": [
+        "Choice A",
+        "Choice B",
+        "Choice C",
+        "Choice D"
+      ],
+      "correctIndex": 0,
+      "hint": "Add a personal clue here."
+    }
+  ]
+}
