@@ -256,9 +256,13 @@ export class DungeonScene extends Phaser.Scene {
         cooldownLevel: 0,
         maxHeartUpgrades: 0,
         shieldCharges: 0,
-        secretMemories: []
+        secretMemories: [],
+        collectedLootDrops: {},
+        collectedMemoryEchoes: {}
       };
     }
+    this.state.upgrades.collectedLootDrops ||= {};
+    this.state.upgrades.collectedMemoryEchoes ||= {};
     this.unlockedAbilities = this.state.unlockedAbilities;
     this.damageBonus = this.state.upgrades.damageLevel || 0;
     this.cooldownBonus = this.state.upgrades.cooldownLevel || 0;
@@ -540,6 +544,31 @@ export class DungeonScene extends Phaser.Scene {
     return {
       x: Phaser.Math.Between(Math.round(room.x + margin), Math.round(room.x + room.w - margin)),
       y: Phaser.Math.Between(Math.round(room.y + margin), Math.round(room.y + room.h - margin))
+    };
+  }
+
+  getDeterministicUnit(value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i += 1) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return ((hash >>> 0) % 10000) / 10000;
+  }
+
+  getDeterministicPointInRoom(roomId, key, margin = 58) {
+    const room = this.getRoomById(roomId);
+    if (!room) {
+      return {
+        x: Phaser.Math.Between(this.wallPadding + 80, this.worldWidth - 80),
+        y: Phaser.Math.Between(this.wallPadding + 80, this.worldHeight - 80)
+      };
+    }
+    const xUnit = this.getDeterministicUnit(`${key}:x`);
+    const yUnit = this.getDeterministicUnit(`${key}:y`);
+    return {
+      x: Phaser.Math.Clamp(room.x + margin + (room.w - margin * 2) * xUnit, room.x + margin, room.x + room.w - margin),
+      y: Phaser.Math.Clamp(room.y + margin + (room.h - margin * 2) * yUnit, room.y + margin, room.y + room.h - margin)
     };
   }
 
@@ -1322,6 +1351,9 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   spawnSecretRelic() {
+    if (this.state.secretRelicFound) {
+      return;
+    }
     const anchor = this.getAnchorPoint("relic", 0.9, 0.14);
     const x = anchor.x;
     const y = anchor.y;
@@ -1338,10 +1370,16 @@ export class DungeonScene extends Phaser.Scene {
   spawnLootDrops() {
     const roomIds = this.roomZones.map((room) => room.id);
     const lootCount = 5 + this.dungeonOrderIndex;
+    const dungeonId = this.dungeon?.id || "dungeon";
+    const collectedLoot = new Set(this.state.upgrades.collectedLootDrops[dungeonId] || []);
     for (let i = 0; i < lootCount; i += 1) {
+      const lootKey = `${dungeonId}:loot:${i}`;
+      if (collectedLoot.has(lootKey)) {
+        continue;
+      }
       const roomId = roomIds[(i + 1) % roomIds.length] || "entry";
-      const point = this.getRandomPointInRoom(roomId, 78);
-      const roll = Phaser.Math.FloatBetween(0, 1);
+      const point = this.getDeterministicPointInRoom(roomId, lootKey, 78);
+      const roll = this.getDeterministicUnit(`${lootKey}:type`);
       let type = "heart";
       if (roll > 0.82) {
         type = "cooldown";
@@ -1362,17 +1400,35 @@ export class DungeonScene extends Phaser.Scene {
         repeat: -1
       });
 
-      this.lootDrops.push({ type, orb, halo, x: point.x, y: point.y, collected: false });
+      this.lootDrops.push({ type, orb, halo, x: point.x, y: point.y, key: lootKey, collected: false });
     }
   }
 
   spawnMemoryEchoes() {
     const roomIds = this.roomZones.map((room) => room.id);
-    const echoesToSpawn = 2;
+    const echoesToSpawn = Math.min(roomIds.length, 3 + this.dungeonOrderIndex * 2);
+    const dungeonId = this.dungeon?.id || "dungeon";
+    const collectedMemories = new Set(this.state.upgrades.secretMemories || []);
+    const roomOffsets = [
+      { x: 0.18, y: 0.22 },
+      { x: 0.78, y: 0.24 },
+      { x: 0.5, y: 0.5 },
+      { x: 0.2, y: 0.72 },
+      { x: 0.8, y: 0.72 }
+    ];
     for (let i = 0; i < echoesToSpawn; i += 1) {
-      const roomId = roomIds[(i + 2) % roomIds.length] || "entry";
-      const point = this.getRandomPointInRoom(roomId, 90);
-      const node = this.add.image(point.x, point.y, "ui-relic").setDisplaySize(18, 18).setTint(0xb8f2ff).setDepth(97);
+      const echoKey = `${dungeonId}:memory:${i}`;
+      if (collectedMemories.has(echoKey)) {
+        continue;
+      }
+      const roomId = roomIds[(i * 2 + this.dungeonOrderIndex) % roomIds.length] || "entry";
+      const room = this.getRoomById(roomId);
+      const offset = roomOffsets[i % roomOffsets.length];
+      const offsetX = room.w * offset.x;
+      const offsetY = room.h * offset.y;
+      const x = Phaser.Math.Clamp(room.x + offsetX, room.x + 70, room.x + room.w - 70);
+      const y = Phaser.Math.Clamp(room.y + offsetY, room.y + 70, room.y + room.h - 70);
+      const node = this.add.image(x, y, "ui-relic").setDisplaySize(18, 18).setTint(0xb8f2ff).setDepth(97);
       this.tweens.add({
         targets: node,
         alpha: 0.35,
@@ -1380,7 +1436,8 @@ export class DungeonScene extends Phaser.Scene {
         yoyo: true,
         repeat: -1
       });
-      this.memoryEchoes.push({ node, roomId, collected: false });
+      node.setPosition(x, y);
+      this.memoryEchoes.push({ node, roomId, key: echoKey, collected: false });
     }
   }
 
@@ -1397,6 +1454,14 @@ export class DungeonScene extends Phaser.Scene {
       drop.collected = true;
       drop.orb.destroy();
       drop.halo.destroy();
+      if (drop.key) {
+        const dungeonId = this.dungeon?.id || "dungeon";
+        const collectedLoot = this.state.upgrades.collectedLootDrops[dungeonId] || [];
+        if (!collectedLoot.includes(drop.key)) {
+          collectedLoot.push(drop.key);
+          this.state.upgrades.collectedLootDrops[dungeonId] = collectedLoot;
+        }
+      }
       this.applyLootEffect(drop.type);
     });
 
@@ -1410,7 +1475,7 @@ export class DungeonScene extends Phaser.Scene {
       }
       echo.collected = true;
       echo.node.destroy();
-      this.registerSecretMemoryEcho(echo.roomId);
+      this.registerSecretMemoryEcho(echo);
     });
   }
 
@@ -1445,13 +1510,22 @@ export class DungeonScene extends Phaser.Scene {
     this.setStatus(`${LOOT_TYPES[type].label}: Skills recharge faster.`);
   }
 
-  registerSecretMemoryEcho(roomId) {
-    const memoryKey = `${this.dungeon?.id || "dungeon"}:${roomId}:${this.state.upgrades.secretMemories.length}`;
+  registerSecretMemoryEcho(echo) {
+    const memoryKey = echo?.key;
+    if (!memoryKey) {
+      return;
+    }
+
     const current = this.state.upgrades.secretMemories || [];
     if (!current.includes(memoryKey)) {
       current.push(memoryKey);
       this.state.upgrades.secretMemories = current;
     }
+
+    const gallery = getDungeonMemoryGallery(this.dungeon?.id);
+    const selectedMemory = gallery.length
+      ? gallery[(current.length - 1 + gallery.length) % gallery.length]
+      : SECRET_RELIC_GALLERY[0];
 
     if ((this.state.upgrades.damageLevel || 0) < 6) {
       this.state.upgrades.damageLevel += 1;
@@ -1460,7 +1534,9 @@ export class DungeonScene extends Phaser.Scene {
 
     this.hitSparkFx(this.player.x, this.player.y, 0xb8f2ff, 1.6);
     musicManager.playSfx("secret", { throttleMs: 130, gain: 0.055 });
-    this.setStatus("Secret memory discovered. Attack strength increased.");
+    runMemorySequence(this, "Memory Capsule Found!", selectedMemory ? [selectedMemory] : SECRET_RELIC_GALLERY, () => {
+      this.setStatus("Secret memory discovered. Attack strength increased.");
+    });
   }
 
   getDamageScaleBonus() {

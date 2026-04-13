@@ -20,7 +20,9 @@ export function runMemorySequence(scene, title, items, onContinue) {
   let mediaDom = null;
   let finished = false;
   const cx = width / 2;
-  const cy = 300;
+  const cy = height / 2 + 8;
+  const mediaWidth = Math.min(720, Math.max(520, Math.floor(width * 0.62)));
+  const mediaHeight = 360;
 
   scene.overlayBlock = scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.76).setDepth(300).setScrollFactor(0);
   const frame = scene.add.image(width / 2, height / 2, "ui-popup-frame").setDisplaySize(900, 520).setDepth(310).setScrollFactor(0);
@@ -86,16 +88,32 @@ export function runMemorySequence(scene, title, items, onContinue) {
     const primary = urls[0] || "";
     const useVideo = item.kind === "video" || urls.some((u) => isVideoPath(u));
 
+    const shell = document.createElement("div");
+    shell.style.width = `${mediaWidth}px`;
+    shell.style.height = `${mediaHeight}px`;
+    shell.style.display = "flex";
+    shell.style.alignItems = "center";
+    shell.style.justifyContent = "center";
+    shell.style.overflow = "hidden";
+    shell.style.background = "rgba(0, 0, 0, 0.08)";
+    shell.style.borderRadius = "8px";
+
     if (useVideo && urls.length) {
       const video = document.createElement("video");
       video.muted = false;
       video.controls = true;
       video.autoplay = true;
       video.playsInline = true;
-      video.style.width = "700px";
+      video.style.width = "100%";
+      video.style.height = "100%";
       video.style.maxWidth = "100%";
+      video.style.maxHeight = "100%";
+      video.style.objectFit = "contain";
+      video.style.display = "block";
+      video.style.margin = "0";
       video.style.borderRadius = "8px";
       video.style.boxShadow = "0 6px 18px rgba(0,0,0,0.45)";
+      shell.appendChild(video);
       attachVideoSrcWithFallbacks(video, urls, {
         onReady: () => fallback.setVisible(false),
         onFailed: () => {
@@ -103,13 +121,17 @@ export function runMemorySequence(scene, title, items, onContinue) {
           fallback.setVisible(true);
         }
       });
-      mediaDom = scene.add.dom(cx, cy, video).setDepth(322).setScrollFactor(0);
+      mediaDom = scene.add.dom(cx, cy, shell).setDepth(322).setScrollFactor(0);
     } else if (primary) {
       const img = document.createElement("img");
       img.alt = "Memory";
-      img.style.maxWidth = "700px";
-      img.style.maxHeight = "420px";
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.maxWidth = "100%";
+      img.style.maxHeight = "100%";
       img.style.objectFit = "contain";
+      img.style.display = "block";
+      img.style.margin = "0";
       img.style.borderRadius = "8px";
       img.style.boxShadow = "0 6px 18px rgba(0,0,0,0.45)";
       img.src = `/${encodeURI(primary)}`;
@@ -118,7 +140,8 @@ export function runMemorySequence(scene, title, items, onContinue) {
         fallback.setText(`Couldn't load:\n${primary}`);
         fallback.setVisible(true);
       };
-      mediaDom = scene.add.dom(cx, cy, img).setDepth(322).setScrollFactor(0);
+      shell.appendChild(img);
+      mediaDom = scene.add.dom(cx, cy, shell).setDepth(322).setScrollFactor(0);
     } else {
       fallback.setText("No media for this memory.");
       fallback.setVisible(true);
