@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
-  <defs><linearGradient id="pf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22342a"/><stop offset="100%" stop-color="#0f1714"/></linearGradient></defs>
-  <rect x="24" y="24" width="1232" height="672" rx="28" fill="url(#pf)" stroke="#9bc08b" stroke-width="8"/>
-  <rect x="48" y="48" width="1184" height="624" rx="20" fill="none" stroke="#496558" stroke-width="4"/>
-</svg>

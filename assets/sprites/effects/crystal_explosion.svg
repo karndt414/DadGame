@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
-  <circle cx="80" cy="80" r="26" fill="#fff2c4"/>
-  <circle cx="80" cy="80" r="46" fill="#ffd07a" opacity="0.72"/>
-  <circle cx="80" cy="80" r="66" fill="#ff8f7d" opacity="0.42"/>
-  <path d="M80 8 L90 42 L124 36 L98 58 L120 82 L88 80 L80 112 L72 80 L40 82 L62 58 L36 36 L70 42 Z" fill="#fff0b8" opacity="0.8"/>
-</svg>
