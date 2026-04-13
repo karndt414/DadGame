@@ -14,7 +14,7 @@ const gameState = {
   secretRelicFound: false,
   mediaPaths: getInitialMediaPathsForState(),
   trivia: triviaData.questions,
-  unlockedAbilities: { slash: true, dodge: false, shoot: false, explosion: false },
+  unlockedAbilities: { slash: false, dodge: false, shoot: false, explosion: false },
   abilityTier: 1,
   dungeonProgress: {
     father_childhood: { completed: false, memoryKey: false },

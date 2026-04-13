@@ -13,7 +13,7 @@ export class TitleScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, width, height, 0x1a2217);
 
     this.add
-      .text(width / 2, 110, "Dad Quest: Hero of the Backyard", {
+      .text(width / 2, 110, "The Legend of Dad", {
         fontFamily: "Trebuchet MS",
         fontSize: "46px",
         color: "#e5d19a",
@@ -30,29 +30,11 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, 270, "Three eras: 80s/90s scifi arcade, early-2000s fantasy adventure, then a modern music-tech campus.", {
-        fontSize: "22px",
-        color: "#d9e3d1",
-        align: "center",
-        wordWrap: { width: width * 0.82 }
-      })
-      .setOrigin(0.5);
-
-    this.add
-      .text(width / 2, 360, "Controls: WASD move, Click slash, Shift dodge, F shoot, Space explosion, E interact", {
+      .text(width / 2, 360, "Controls: WASD move, E interact", {
         fontSize: "22px",
         color: "#d5d8ce",
         align: "center",
         wordWrap: { width: width * 0.8 }
-      })
-      .setOrigin(0.5);
-
-    this.add
-      .text(width / 2, 398, "Each boss restores a Memory Key and a new power. Your era-themed tracks play per zone.", {
-        fontSize: "21px",
-        color: "#f2de95",
-        align: "center",
-        wordWrap: { width: width * 0.82 }
       })
       .setOrigin(0.5);
 

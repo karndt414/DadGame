@@ -207,7 +207,7 @@ export class DungeonScene extends Phaser.Scene {
     this.abilityText = null;
     this.playerTextureKey = "player-hero-lv1";
     this.abilityCrystal = null;
-    this.unlockedAbilities = { slash: true, dodge: false, shoot: false, explosion: false };
+    this.unlockedAbilities = { slash: false, dodge: false, shoot: false, explosion: false };
     this.rewardAbility = "dodge";
     this.shootCooldown = 0;
     this.lockedAbilityPromptAt = 0;
@@ -218,7 +218,6 @@ export class DungeonScene extends Phaser.Scene {
     this.dodgeBurstUntil = 0;
     this.dodgeVector = new Phaser.Math.Vector2(0, 0);
     this.enemyProjectiles = [];
-    this.enemyDebugText = null;
     this.bossDashUntil = 0;
     this.bossDashCooldown = 0;
     this.bossPulseCooldown = 0;
@@ -249,7 +248,7 @@ export class DungeonScene extends Phaser.Scene {
     this.worldHeight = worldSize.height;
 
     if (!this.state.unlockedAbilities) {
-      this.state.unlockedAbilities = { slash: true, dodge: false, shoot: false, explosion: false };
+      this.state.unlockedAbilities = { slash: false, dodge: false, shoot: false, explosion: false };
     }
     if (!this.state.upgrades) {
       this.state.upgrades = {
@@ -264,6 +263,7 @@ export class DungeonScene extends Phaser.Scene {
     this.damageBonus = this.state.upgrades.damageLevel || 0;
     this.cooldownBonus = this.state.upgrades.cooldownLevel || 0;
     this.state.maxHearts = clamp(3 + (this.state.upgrades.maxHeartUpgrades || 0), 3, 6);
+    this.enemyLevelMultiplier = 1 + this.dungeonOrderIndex * 0.14;
 
     this.state.hearts = this.state.maxHearts;
 
@@ -366,13 +366,6 @@ export class DungeonScene extends Phaser.Scene {
       strokeThickness: 3
     }).setOrigin(0.5).setDepth(120).setScrollFactor(0);
 
-    this.enemyDebugText = this.add.text(20, height - 58, "Enemy debug: waiting", {
-      fontSize: "15px",
-      color: "#d7f3ff",
-      stroke: "#000000",
-      strokeThickness: 2
-    }).setDepth(120).setScrollFactor(0);
-
     this.cursors = this.input.keyboard.addKeys({
       up: "W",
       left: "A",
@@ -421,7 +414,6 @@ export class DungeonScene extends Phaser.Scene {
     this.updateMovement();
     this.updateEnemies(time);
     this.updateLootCollection();
-    this.updateEnemyDebugText();
 
     if (Phaser.Input.Keyboard.JustDown(this.cursors.dodge)) {
       this.tryDodge(time);
@@ -520,6 +512,10 @@ export class DungeonScene extends Phaser.Scene {
 
   getRoomById(roomId) {
     return this.roomZones.find((room) => room.id === roomId) || this.roomZones[0];
+  }
+
+  getRoomContainingPoint(x, y) {
+    return this.roomZones.find((room) => x >= room.x && x <= room.x + room.w && y >= room.y && y <= room.y + room.h) || null;
   }
 
   getAnchorPoint(anchorKey, relX = 0.5, relY = 0.5) {
@@ -752,27 +748,29 @@ export class DungeonScene extends Phaser.Scene {
       const roomId = roomIds[(i + 1) % roomIds.length] || "entry";
       const spawn = this.getRandomPointInRoom(roomId, 70);
       const profile = ENEMY_AI_PROFILE;
+      const levelScale = this.enemyLevelMultiplier || 1;
 
       const enemy = this.physics.add.image(spawn.x, spawn.y, enemyKey);
 
       enemy.setDisplaySize(enemyClass === "strong" ? 46 : 38, enemyClass === "strong" ? 46 : 38);
       enemy.setCollideWorldBounds(true);
-      enemy.hp = enemyClass === "strong" ? 7 : 3;
+      enemy.hp = Math.max(1, Math.round((enemyClass === "strong" ? 7 : 3) * levelScale));
       enemy.enemyClass = enemyClass;
-      enemy.moveSpeed = profile.speed;
-      enemy.touchDamage = enemyClass === "strong" ? 2 : 1;
+      enemy.moveSpeed = profile.speed * (1 + this.dungeonOrderIndex * 0.05);
+      enemy.touchDamage = Math.max(1, Math.round((enemyClass === "strong" ? 2 : 1) * (1 + this.dungeonOrderIndex * 0.25)));
       enemy.nextTouchAt = 0;
       enemy.dashUntil = 0;
       enemy.dashDir = new Phaser.Math.Vector2(1, 0);
       enemy.nextDashAt = this.time.now + Phaser.Math.Between(profile.dashCooldownMinMs, profile.dashCooldownMaxMs);
-      enemy.lastDebugX = enemy.x;
-      enemy.lastDebugY = enemy.y;
       enemy.body.setAllowGravity(false);
       enemy.body.setEnable(true);
       enemy.body.moves = true;
       enemy.body.setDrag(0, 0);
       if (this.wallBodies) {
         this.physics.add.collider(enemy, this.wallBodies);
+      }
+      if (this.enemies.length > 0) {
+        this.physics.add.collider(enemy, this.enemies);
       }
       this.physics.add.overlap(this.player, enemy, () => {
         const now = this.time.now;
@@ -809,6 +807,25 @@ export class DungeonScene extends Phaser.Scene {
     enemy.body.setVelocity((dx / len) * speed, (dy / len) * speed);
   }
 
+  enemyCanSeePlayer(enemy) {
+    if (!enemy || !this.player) {
+      return true;
+    }
+
+    const enemyRoom = this.getRoomContainingPoint(enemy.x, enemy.y);
+    const playerRoom = this.getRoomContainingPoint(this.player.x, this.player.y);
+    if (enemyRoom && playerRoom && enemyRoom.id === playerRoom.id) {
+      return true;
+    }
+
+    if (!this.wallRects?.length) {
+      return true;
+    }
+
+    const sightLine = new Phaser.Geom.Line(enemy.x, enemy.y, this.player.x, this.player.y);
+    return !this.wallRects.some((wallRect) => Phaser.Geom.Intersects.LineToRectangle(sightLine, wallRect));
+  }
+
   updateEnemies(now) {
     const playerPos = new Phaser.Math.Vector2(this.player.x, this.player.y);
 
@@ -824,6 +841,11 @@ export class DungeonScene extends Phaser.Scene {
       const dist = Math.hypot(dx, dy) || 1;
       const dirX = dx / dist;
       const dirY = dy / dist;
+
+      if (!this.enemyCanSeePlayer(enemy)) {
+        enemy.body.setVelocity(0, 0);
+        return;
+      }
 
       if (now < (enemy.dashUntil || 0)) {
         enemy.body.setVelocity(dirX * profile.speed * profile.dashSpeedScale, dirY * profile.speed * profile.dashSpeedScale);
@@ -845,30 +867,6 @@ export class DungeonScene extends Phaser.Scene {
     if (this.boss?.body) {
       this.updateBossBehavior(playerPos, now);
     }
-  }
-
-  updateEnemyDebugText() {
-    if (!this.enemyDebugText) {
-      return;
-    }
-
-    const enemy = this.enemies.find((candidate) => candidate?.body && candidate.body.enable !== false);
-    if (!enemy) {
-      this.enemyDebugText.setText("Enemy debug: none active");
-      return;
-    }
-
-    const deltaX = enemy.x - (enemy.lastDebugX ?? enemy.x);
-    const deltaY = enemy.y - (enemy.lastDebugY ?? enemy.y);
-    const velocity = enemy.body?.velocity?.length?.() || 0;
-
-    this.enemyDebugText.setText(
-      `Enemy debug: ${enemy.enemyClass || "regular"} x:${enemy.x.toFixed(1)} y:${enemy.y.toFixed(1)} ` +
-        `dx:${deltaX.toFixed(2)} dy:${deltaY.toFixed(2)} v:${velocity.toFixed(2)}`
-    );
-
-    enemy.lastDebugX = enemy.x;
-    enemy.lastDebugY = enemy.y;
   }
 
   spawnEnemyProjectile(x, y, direction, speed, damage = 1, color = 0xb6c8ff, ttl = 2200, radius = 6) {

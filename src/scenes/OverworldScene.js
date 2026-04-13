@@ -39,6 +39,28 @@ export class OverworldScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.lastFootstepAt = 0;
 
+    this.swordPickup = null;
+    if (!this.state.unlockedAbilities?.slash) {
+      this.swordPickup = this.add.image(640, 560, "fx-slash-lv1").setDisplaySize(74, 36).setDepth(90);
+      this.swordPickup.setTint(0xf5e6b8);
+      this.tweens.add({
+        targets: this.swordPickup,
+        y: this.swordPickup.y - 8,
+        duration: 800,
+        yoyo: true,
+        repeat: -1
+      });
+
+      this.swordPrompt = this.add
+        .text(640, 528, "Press E to equip the sword", {
+          fontSize: "20px",
+          color: "#f5e6b8",
+          stroke: "#000000",
+          strokeThickness: 3
+        })
+        .setOrigin(0.5);
+    }
+
     this.cursors = this.input.keyboard.addKeys({
       up: "W",
       left: "A",
@@ -195,6 +217,22 @@ export class OverworldScene extends Phaser.Scene {
   tryInteract() {
     this.syncFinalGateState();
     musicManager.playSfx("interact", { throttleMs: 90, gain: 0.03 });
+
+    if (this.swordPickup) {
+      const swordDist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.swordPickup.x, this.swordPickup.y);
+      if (swordDist < 72) {
+        this.state.unlockedAbilities = this.state.unlockedAbilities || {};
+        this.state.unlockedAbilities.slash = true;
+        this.swordPickup.destroy();
+        this.swordPickup = null;
+        this.swordPrompt?.destroy();
+        this.swordPrompt = null;
+        this.abilityText?.setText(this.getAbilityHudText());
+        this.setStatus("Sword equipped. Slash unlocked.");
+        musicManager.playSfx("pickup", { throttleMs: 90, gain: 0.055, pitch: 1.08 });
+        return;
+      }
+    }
 
     const nearbyDungeon = this.entranceNodes.find(
       (entry) => Phaser.Math.Distance.Between(this.player.x, this.player.y, entry.x, entry.y) < 94

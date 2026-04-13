@@ -364,7 +364,7 @@ export class FinalBossScene extends Phaser.Scene {
       [overlay, frame, heading, fallback, end, videoNode].filter(Boolean).forEach((n) => n.destroy());
       this.state.hearts = this.state.maxHearts;
       this.state.secretRelicFound = false;
-      this.state.unlockedAbilities = { slash: true, dodge: false, shoot: false, explosion: false };
+      this.state.unlockedAbilities = { slash: false, dodge: false, shoot: false, explosion: false };
       this.state.abilityTier = 1;
       this.state.dungeonProgress = {
         father_childhood: { completed: false, memoryKey: false },
