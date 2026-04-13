@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="space" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a0f2e"/>
+      <stop offset="45%" stop-color="#0d1b2a"/>
+      <stop offset="100%" stop-color="#050810"/>
+    </linearGradient>
+    <radialGradient id="planet" cx="88%" cy="18%" r="45%">
+      <stop offset="0%" stop-color="#3d4f6b" stop-opacity="0.9"/>
+      <stop offset="70%" stop-color="#1c2438" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#space)"/>
+  <circle cx="1680" cy="200" r="220" fill="url(#planet)"/>
+  <!-- Death-star arc silhouette -->
+  <path d="M200 320 A 280 280 0 0 1 760 320" fill="none" stroke="#2a3348" stroke-width="14" opacity="0.85"/>
+  <path d="M260 300 L700 300" stroke="#1e2635" stroke-width="8" opacity="0.5"/>
+  <rect x="420" y="286" width="24" height="24" fill="#0f3460" opacity="0.7"/>
+  <!-- Pixel stars -->
+  <g fill="#c8e7ff" opacity="0.9">
+    <rect x="120" y="80" width="4" height="4"/><rect x="340" y="140" width="3" height="3"/><rect x="520" y="60" width="4" height="4"/>
+    <rect x="900" y="120" width="3" height="3"/><rect x="1120" y="90" width="4" height="4"/><rect x="1380" y="200" width="3" height="3"/>
+    <rect x="240" y="420" width="4" height="4"/><rect x="680" y="500" width="3" height="3"/><rect x="1040" y="380" width="4" height="4"/>
+    <rect x="320" y="720" width="3" height="3"/><rect x="1500" y="640" width="4" height="4"/><rect x="1760" y="480" width="3" height="3"/>
+  </g>
+  <!-- CRT scanlines -->
+  <g opacity="0.08" stroke="#000" stroke-width="1">
+    <path d="M0 0 V1080" transform="translate(0,0)"/>
+  </g>
+  <g opacity="0.05" stroke="#fff" stroke-width="1">
+    <path d="M0 4 H1920 M0 12 H1920 M0 20 H1920" transform="translate(0 0)"/>
+  </g>
+  <g opacity="0.12">
+    <line x1="0" y1="0" x2="1920" y2="1080" stroke="#4a7c59" stroke-width="2"/>
+    <line x1="0" y1="1080" x2="1920" y2="0" stroke="#4a7c59" stroke-width="1"/>
+  </g>
+  <!-- NES-era accent grid -->
+  <g opacity="0.15" stroke="#6b8e23" stroke-width="2" fill="none">
+    <rect x="40" y="880" width="200" height="120"/>
+    <rect x="60" y="900" width="56" height="56"/><rect x="124" y="900" width="56" height="56"/>
+    <rect x="92" y="936" width="56" height="56"/>
+  </g>
+  <text x="24" y="42" fill="#9fdf9f" font-family="monospace" font-size="13" opacity="0.9">SECTOR 7 · 1987</text>
+  <text x="24" y="62" fill="#88aaff" font-family="monospace" font-size="10" opacity="0.65">STAR TRENCH / 8-BIT DECK</text>
+</svg>

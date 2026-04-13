@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "prestart": "node scripts/syncTrivia.mjs",
+    "prestart": "node scripts/syncTrivia.mjs && node scripts/syncAssets.mjs",
     "start": "vite",
-    "predev": "node scripts/syncTrivia.mjs",
+    "predev": "node scripts/syncTrivia.mjs && node scripts/syncAssets.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/syncTrivia.mjs",
+    "prebuild": "node scripts/syncTrivia.mjs && node scripts/syncAssets.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

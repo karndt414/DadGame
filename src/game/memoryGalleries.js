@@ -18,11 +18,20 @@ export const DUNGEON_MEMORY_GALLERIES = {
   ],
   my_childhood: [
     { kind: "image", paths: ["assets/media/dungeon_2_memory.JPEG"] },
-    { kind: "video", paths: ["assets/media/dungeon_2_memory.mov", "assets/media/dungeon_2_memory2.mov"] },
+    { kind: "image", paths: ["assets/media/dungeon_2_memory3.jpeg"] },
+    { kind: "video", paths: ["assets/media/dungeon_2_memory.mov"] },
+    { kind: "video", paths: ["assets/media/dungeon_2_memory2.mov"] },
     { kind: "video", paths: ["assets/media/dungeon_2_final_memory.mov"] }
   ],
   modern_day: [
+    { kind: "image", paths: ["assets/media/dungeon_3_memory3.jpeg"] },
+    { kind: "image", paths: ["assets/media/dungeon_3_memory4.jpeg"] },
+    { kind: "image", paths: ["assets/media/dungeon_3_memory5.jpeg"] },
+    { kind: "image", paths: ["assets/media/dungeon_3_memory6.jpeg"] },
+    { kind: "image", paths: ["assets/media/dungeon_3_memory7.jpeg"] },
+    { kind: "image", paths: ["assets/media/dungon_3_memory8.jpeg"] },
     { kind: "video", paths: ["assets/media/dungeon_3_memory.mov"] },
+    { kind: "video", paths: ["assets/media/dungeon_3_memory2.mov"] },
     { kind: "video", paths: ["assets/media/dungeon_3_final_memory.mov"] }
   ]
 };
