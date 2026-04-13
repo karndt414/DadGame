@@ -9,6 +9,9 @@ export class TitleScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
     musicManager.setMood("title");
+    musicManager.stopCurrentTrack();
+    musicManager.usingAssetTracks = false;
+    void musicManager.tryStart();
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x1a2217);
 
@@ -57,6 +60,7 @@ export class TitleScene extends Phaser.Scene {
 
     this.input.keyboard.once("keydown-ENTER", async () => {
       musicManager.playSfx("uiConfirm", { throttleMs: 80, gain: 0.05, pitch: 1.08 });
+      musicManager.usingAssetTracks = true;
       await musicManager.tryStart();
       this.scene.start("overworld");
     });
