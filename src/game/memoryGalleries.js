@@ -10,12 +10,11 @@ export const DUNGEON_MEMORY_GALLERIES = {
   father_childhood: [
     { kind: "image", paths: ["assets/media/dungeon_1_memory.jpeg"] },
     { kind: "image", paths: ["assets/media/dungeon_1_memory2.jpeg"] },
-    { kind: "image", paths: ["assets/media/dungeon_1_memory3a.jpeg"] },
-    { kind: "image", paths: ["assets/media/dungeon_1_memory3b.jpeg"] },
+    { kind: "image", paths: ["assets/media/dungeon_1_memory3a.jpeg", "assets/media/dungeon_1_memory3b.jpeg"] },
     { kind: "image", paths: ["assets/media/dungeon_1_memory4.jpeg"] },
     { kind: "video", paths: ["assets/media/dungeon_1_memory5a.mov", "assets/media/dungeon_1_memory5b.mov"] },
     { kind: "video", paths: ["assets/media/dungeon_1_memory6.mov"] },
-    { kind: "video", paths: ["assets/media/dungeon_1_memory7.mov"] }
+    { kind: "video", paths: ["assets/media/dungeon_1_final_memory.mov"] }
   ],
   my_childhood: [
     { kind: "image", paths: ["assets/media/dungeon_2_memory.JPEG"] },

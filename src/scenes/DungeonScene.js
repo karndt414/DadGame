@@ -32,6 +32,12 @@ const ABILITY_POPUP_ICON = {
   shoot: { key: "fx-crystal-shot", width: 58, height: 58 },
   explosion: { key: "fx-crystal-explosion", width: 104, height: 104 }
 };
+const CAPSULE_REWARD_SEQUENCE = [
+  { type: "damage", label: "Damage Up" },
+  { type: "shield", label: "Shield Charge" },
+  { type: "cooldown", label: "Skill Recharge" },
+  { type: "heart", label: "Max Heart" }
+];
 const WORLD_SIZES = [
   { width: 2200, height: 1400 },
   { width: 2400, height: 1500 },
@@ -228,6 +234,7 @@ export class DungeonScene extends Phaser.Scene {
     this.layoutAnchors = null;
     this.lootDrops = [];
     this.memoryEchoes = [];
+    this.triviaShrines = [];
     this.damageBonus = 0;
     this.cooldownBonus = 0;
     this.lastFootstepAt = 0;
@@ -258,11 +265,13 @@ export class DungeonScene extends Phaser.Scene {
         shieldCharges: 0,
         secretMemories: [],
         collectedLootDrops: {},
-        collectedMemoryEchoes: {}
+        collectedMemoryEchoes: {},
+        collectedTriviaShrines: {}
       };
     }
     this.state.upgrades.collectedLootDrops ||= {};
     this.state.upgrades.collectedMemoryEchoes ||= {};
+    this.state.upgrades.collectedTriviaShrines ||= {};
     this.unlockedAbilities = this.state.unlockedAbilities;
     this.damageBonus = this.state.upgrades.damageLevel || 0;
     this.cooldownBonus = this.state.upgrades.cooldownLevel || 0;
@@ -278,8 +287,10 @@ export class DungeonScene extends Phaser.Scene {
     this.secretRelic = null;
     this.overlayBlock = null;
     this.popupNodes = [];
+    this.triviaShrines = [];
     this.questionNodes = [];
     this.currentQuestion = null;
+    this.currentTriviaShrine = null;
     this.comboStep = 0;
     this.shootCooldown = 0;
     this.lockedAbilityPromptAt = 0;
@@ -388,8 +399,8 @@ export class DungeonScene extends Phaser.Scene {
     this.input.on("pointerdown", this.onAttack, this);
     this.spawnAbilityCrystal();
     this.spawnSecretRelic();
-    this.spawnLootDrops();
     this.spawnMemoryEchoes();
+    this.spawnTriviaShrines();
 
     const intro = this.dungeon?.subtitle
       ? `${this.dungeon.subtitle}: defeat enemies, beat the boss, recover the memory key.`
@@ -439,10 +450,9 @@ export class DungeonScene extends Phaser.Scene {
       this.handleBossDefeat();
     }
 
-    if (!this.boss && this.enemies.length === 0 && !this.shrine) {
-      this.spawnShrine();
+    if (!this.boss && this.enemies.length === 0) {
       this.spawnBoss();
-      this.setStatus("Optional trivia shrine available. Defeat the mini-boss.");
+      this.setStatus("Trivia shrines are ready. Defeat the mini-boss to recover the final memory.");
     }
   }
 
@@ -1406,7 +1416,9 @@ export class DungeonScene extends Phaser.Scene {
 
   spawnMemoryEchoes() {
     const roomIds = this.roomZones.map((room) => room.id);
-    const echoesToSpawn = Math.min(roomIds.length, 3 + this.dungeonOrderIndex * 2);
+    const gallery = getDungeonMemoryGallery(this.dungeon?.id);
+    const capsuleGallery = gallery.filter((item) => item.kind === "image");
+    const echoesToSpawn = Math.min(roomIds.length, capsuleGallery.length);
     const dungeonId = this.dungeon?.id || "dungeon";
     const collectedMemories = new Set(this.state.upgrades.secretMemories || []);
     const roomOffsets = [
@@ -1421,6 +1433,8 @@ export class DungeonScene extends Phaser.Scene {
       if (collectedMemories.has(echoKey)) {
         continue;
       }
+      const reward = CAPSULE_REWARD_SEQUENCE[i % CAPSULE_REWARD_SEQUENCE.length];
+      const memoryItem = capsuleGallery[i];
       const roomId = roomIds[(i * 2 + this.dungeonOrderIndex) % roomIds.length] || "entry";
       const room = this.getRoomById(roomId);
       const offset = roomOffsets[i % roomOffsets.length];
@@ -1437,34 +1451,60 @@ export class DungeonScene extends Phaser.Scene {
         repeat: -1
       });
       node.setPosition(x, y);
-      this.memoryEchoes.push({ node, roomId, key: echoKey, collected: false });
+      this.memoryEchoes.push({ node, roomId, key: echoKey, memoryItem, rewardType: reward.type, rewardLabel: reward.label, collected: false });
     }
   }
 
-  updateLootCollection() {
-    this.lootDrops.forEach((drop) => {
-      if (drop.collected) {
-        return;
-      }
-      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, drop.x, drop.y);
-      if (dist > 28) {
+  spawnTriviaShrines() {
+    const roomIds = this.roomZones.map((room) => room.id);
+    const gallery = getDungeonMemoryGallery(this.dungeon?.id);
+    const triviaGallery = gallery.filter((item, index) => item.kind === "video" && index < gallery.length - 1);
+    const dungeonId = this.dungeon?.id || "dungeon";
+    const collectedShrines = new Set(this.state.upgrades.collectedTriviaShrines[dungeonId] || []);
+    const roomOffsets = [
+      { x: 0.3, y: 0.25 },
+      { x: 0.7, y: 0.35 },
+      { x: 0.38, y: 0.7 },
+      { x: 0.72, y: 0.72 }
+    ];
+
+    triviaGallery.forEach((memoryItem, index) => {
+      const shrineKey = `${dungeonId}:trivia:${index}`;
+      if (collectedShrines.has(shrineKey)) {
         return;
       }
 
-      drop.collected = true;
-      drop.orb.destroy();
-      drop.halo.destroy();
-      if (drop.key) {
-        const dungeonId = this.dungeon?.id || "dungeon";
-        const collectedLoot = this.state.upgrades.collectedLootDrops[dungeonId] || [];
-        if (!collectedLoot.includes(drop.key)) {
-          collectedLoot.push(drop.key);
-          this.state.upgrades.collectedLootDrops[dungeonId] = collectedLoot;
-        }
-      }
-      this.applyLootEffect(drop.type);
+      const roomId = roomIds[(index * 2 + this.dungeonOrderIndex + 1) % roomIds.length] || "entry";
+      const room = this.getRoomById(roomId);
+      const offset = roomOffsets[index % roomOffsets.length];
+      const x = Phaser.Math.Clamp(room.x + room.w * offset.x, room.x + 70, room.x + room.w - 70);
+      const y = Phaser.Math.Clamp(room.y + room.h * offset.y, room.y + 70, room.y + room.h - 70);
+      const node = this.add.image(x, y, "ui-shrine").setDisplaySize(42, 42).setDepth(98);
+      this.tweens.add({
+        targets: node,
+        alpha: 0.55,
+        duration: 780,
+        yoyo: true,
+        repeat: -1
+      });
+
+      const question = this.getTriviaQuestionForShrine(index);
+      this.triviaShrines.push({ node, roomId, key: shrineKey, memoryItem, questionId: question?.id || null, collected: false });
     });
+  }
 
+  getTriviaQuestionForShrine(index) {
+    const questionIds = Array.isArray(this.dungeon?.shrineQuestionIds)
+      ? this.dungeon.shrineQuestionIds
+      : this.dungeon?.shrineQuestionId
+        ? [this.dungeon.shrineQuestionId]
+        : [];
+
+    const questionId = questionIds[index] || questionIds[questionIds.length - 1] || this.state.trivia[index % this.state.trivia.length]?.id;
+    return this.state.trivia.find((q) => q.id === questionId) || this.state.trivia[index % this.state.trivia.length] || null;
+  }
+
+  updateLootCollection() {
     this.memoryEchoes.forEach((echo) => {
       if (echo.collected || !echo.node) {
         return;
@@ -1477,9 +1517,20 @@ export class DungeonScene extends Phaser.Scene {
       echo.node.destroy();
       this.registerSecretMemoryEcho(echo);
     });
+
+    this.triviaShrines.forEach((shrine) => {
+      if (shrine.collected || !shrine.node) {
+        return;
+      }
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, shrine.node.x, shrine.node.y);
+      if (dist > 56) {
+        return;
+      }
+      this.setStatus("Press E to answer the trivia shrine.");
+    });
   }
 
-  applyLootEffect(type) {
+  applyCapsuleReward(type) {
     musicManager.playSfx("pickup", { throttleMs: 35, gain: 0.045 });
     if (type === "heart") {
       if ((this.state.upgrades.maxHeartUpgrades || 0) < 3) {
@@ -1527,15 +1578,11 @@ export class DungeonScene extends Phaser.Scene {
       ? gallery[(current.length - 1 + gallery.length) % gallery.length]
       : SECRET_RELIC_GALLERY[0];
 
-    if ((this.state.upgrades.damageLevel || 0) < 6) {
-      this.state.upgrades.damageLevel += 1;
-      this.damageBonus = this.state.upgrades.damageLevel;
-    }
-
     this.hitSparkFx(this.player.x, this.player.y, 0xb8f2ff, 1.6);
     musicManager.playSfx("secret", { throttleMs: 130, gain: 0.055 });
-    runMemorySequence(this, "Memory Capsule Found!", selectedMemory ? [selectedMemory] : SECRET_RELIC_GALLERY, () => {
-      this.setStatus("Secret memory discovered. Attack strength increased.");
+    this.applyCapsuleReward(echo.rewardType || "damage");
+    runMemorySequence(this, `Memory Capsule: ${echo.rewardLabel || "Upgrade"}`, echo.memoryItem ? [echo.memoryItem] : selectedMemory ? [selectedMemory] : SECRET_RELIC_GALLERY, () => {
+      this.setStatus(`Memory capsule collected. ${echo.rewardLabel || "Upgrade"} granted.`);
     });
   }
 
@@ -1552,8 +1599,14 @@ export class DungeonScene extends Phaser.Scene {
 
     this.collectAbilityCrystal();
 
-    if (this.shrine && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.shrine.x, this.shrine.y) < 70) {
-      this.openQuestion();
+    const nearbyTriviaShrine = this.triviaShrines.find((shrine) => {
+      if (shrine.collected || !shrine.node) {
+        return false;
+      }
+      return Phaser.Math.Distance.Between(this.player.x, this.player.y, shrine.node.x, shrine.node.y) < 56;
+    });
+    if (nearbyTriviaShrine) {
+      this.openQuestion(nearbyTriviaShrine);
       return;
     }
 
@@ -1567,14 +1620,15 @@ export class DungeonScene extends Phaser.Scene {
     }
   }
 
-  openQuestion() {
+  openQuestion(shrine = null) {
     this.pauseGameplay();
     musicManager.playSfx("uiConfirm", { throttleMs: 120, gain: 0.04 });
     this.overlayBlock = this.add
       .rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x000000, 0.65)
       .setScrollFactor(0);
 
-    this.currentQuestion = this.state.trivia.find((q) => q.id === this.dungeon?.shrineQuestionId) || this.state.trivia[0];
+    this.currentTriviaShrine = shrine;
+    this.currentQuestion = this.state.trivia.find((q) => q.id === shrine?.questionId) || this.state.trivia[0];
 
     const title = this.add.text(120, 120, "Memory Shrine", {
       fontSize: "36px",
@@ -1610,17 +1664,27 @@ export class DungeonScene extends Phaser.Scene {
       return;
     }
 
+    const activeTriviaShrine = this.currentTriviaShrine;
     const correct = selectedIndex === this.currentQuestion.correctIndex;
     if (correct) {
       musicManager.playSfx("uiConfirm", { throttleMs: 100, gain: 0.05, pitch: 1.1 });
-      this.state.hearts = clamp(this.state.hearts + 1, 1, this.state.maxHearts);
-      this.updateHeartsUi();
-      this.setStatus("Correct. You gained a heart or powerup.");
-      if (this.shrine) {
-        this.shrine.destroy();
-        this.shrine = null;
+      this.setStatus("Correct. A memory is revealed.");
+      if (activeTriviaShrine?.node) {
+        activeTriviaShrine.node.destroy();
+        activeTriviaShrine.collected = true;
+        const dungeonId = this.dungeon?.id || "dungeon";
+        const collectedShrines = this.state.upgrades.collectedTriviaShrines[dungeonId] || [];
+        if (!collectedShrines.includes(activeTriviaShrine.key)) {
+          collectedShrines.push(activeTriviaShrine.key);
+          this.state.upgrades.collectedTriviaShrines[dungeonId] = collectedShrines;
+        }
       }
       this.closeQuestion();
+      if (activeTriviaShrine?.memoryItem) {
+        runMemorySequence(this, "Trivia Memory", [activeTriviaShrine.memoryItem], () => {
+          this.setStatus("Trivia shrine cleared. The memory is restored.");
+        });
+      }
       return;
     }
 
@@ -1647,6 +1711,7 @@ export class DungeonScene extends Phaser.Scene {
       this.overlayBlock = null;
     }
     this.currentQuestion = null;
+    this.currentTriviaShrine = null;
     musicManager.playSfx("uiConfirm", { throttleMs: 70, gain: 0.035, pitch: 0.95 });
     this.resumeGameplay();
   }
@@ -1684,7 +1749,9 @@ export class DungeonScene extends Phaser.Scene {
     });
 
     if (this.state.hearts <= 0) {
-      this.scene.restart({ dungeonId: this.dungeon?.id });
+      this.state.hearts = this.state.maxHearts;
+      this.state.overworldMessage = `Defeated in ${this.dungeon?.name || "the dungeon"}. Try again from the overworld.`;
+      this.scene.start("overworld");
     }
   }
 
@@ -1712,9 +1779,8 @@ export class DungeonScene extends Phaser.Scene {
       progress.memoryKey = true;
     }
 
-    const wasUnlocked = Boolean(this.unlockedAbilities[this.rewardAbility]);
     this.state.abilityTier = Math.max(this.state.abilityTier || 1, this.dungeon?.unlockTier || 2);
-    if (!wasUnlocked) {
+    if (!this.unlockedAbilities[this.rewardAbility]) {
       this.unlockedAbilities[this.rewardAbility] = true;
       this.state.unlockedAbilities = this.unlockedAbilities;
     }
@@ -1723,13 +1789,11 @@ export class DungeonScene extends Phaser.Scene {
     this.state.memoryKeysCollected = completeCount;
     this.state.finalBossUnlocked = completeCount >= 3;
 
-    const rewardText = wasUnlocked
-      ? "Memory key recovered."
-      : `Memory key recovered. New power: ${ABILITY_LABELS[this.rewardAbility]}.`;
-    this.state.overworldMessage = `${this.dungeon?.name || "Dungeon"} cleared. ${rewardText}`;
+    this.state.overworldMessage = `${this.dungeon?.name || "Dungeon"} cleared. Final memory recovered.`;
 
     const gallery = getDungeonMemoryGallery(this.dungeon?.id);
-    runMemorySequence(this, `Memory Key restored: ${this.dungeon?.name || "Era"}`, gallery, () => {
+    const finalMemory = gallery[gallery.length - 1] || SECRET_RELIC_GALLERY[0];
+    runMemorySequence(this, "Final Memory", finalMemory ? [finalMemory] : SECRET_RELIC_GALLERY, () => {
       this.scene.start("overworld");
     });
   }

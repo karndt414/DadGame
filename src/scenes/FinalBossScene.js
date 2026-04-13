@@ -221,7 +221,8 @@ export class FinalBossScene extends Phaser.Scene {
 
     if (this.state.hearts <= 0) {
       this.state.hearts = this.state.maxHearts;
-      this.scene.restart();
+      this.state.overworldMessage = "Defeated by the Memory Warden. Return from the overworld when ready.";
+      this.scene.start("overworld");
     }
   }
 

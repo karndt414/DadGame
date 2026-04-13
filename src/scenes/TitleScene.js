@@ -13,7 +13,7 @@ export class TitleScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, width, height, 0x1a2217);
 
     this.add
-      .text(width / 2, 110, "The Legend of Dad", {
+      .text(width / 2, 110, "The Legend of Dadinator", {
         fontFamily: "Trebuchet MS",
         fontSize: "46px",
         color: "#e5d19a",
@@ -39,7 +39,7 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const start = this.add
-      .text(width / 2, 500, "Press ENTER to Begin", {
+      .text(width / 2, 500, "Press ENTER to Begin, and claim your sword!", {
         fontSize: "34px",
         color: "#8ae06e",
         stroke: "#000000",

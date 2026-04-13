@@ -16,7 +16,8 @@ export function runMemorySequence(scene, title, items, onContinue) {
   musicManager.playCelebration();
   scene.pauseGameplay();
 
-  let index = 0;
+  let itemIndex = 0;
+  let pathIndex = 0;
   let mediaDom = null;
   let finished = false;
   const cx = width / 2;
@@ -73,8 +74,12 @@ export function runMemorySequence(scene, title, items, onContinue) {
 
   const updateHint = () => {
     const total = items.length;
-    if (index < total - 1) {
-      hint.setText(`Memory ${index + 1} of ${total} — press ENTER for next`);
+    const item = items[itemIndex];
+    const paths = item?.paths || [];
+    if (paths.length > 1 && pathIndex < paths.length - 1) {
+      hint.setText(`Memory ${itemIndex + 1} of ${total} — press ENTER for next part`);
+    } else if (itemIndex < total - 1) {
+      hint.setText(`Memory ${itemIndex + 1} of ${total} — press ENTER for next`);
     } else {
       hint.setText(`Memory ${total} of ${total} — press ENTER to continue`);
     }
@@ -83,10 +88,10 @@ export function runMemorySequence(scene, title, items, onContinue) {
   const mountStep = () => {
     teardownMedia();
     fallback.setVisible(false).setText("");
-    const item = items[index];
+    const item = items[itemIndex];
     const urls = item.paths || [];
-    const primary = urls[0] || "";
-    const useVideo = item.kind === "video" || urls.some((u) => isVideoPath(u));
+    const currentPath = urls[pathIndex] || "";
+    const useVideo = item.kind === "video" || isVideoPath(currentPath);
 
     const shell = document.createElement("div");
     shell.style.width = `${mediaWidth}px`;
@@ -113,16 +118,21 @@ export function runMemorySequence(scene, title, items, onContinue) {
       video.style.margin = "0";
       video.style.borderRadius = "8px";
       video.style.boxShadow = "0 6px 18px rgba(0,0,0,0.45)";
+      video.onended = () => {
+        if (itemIndex === items.length - 1 && pathIndex === urls.length - 1) {
+          done();
+        }
+      };
       shell.appendChild(video);
-      attachVideoSrcWithFallbacks(video, urls, {
+      attachVideoSrcWithFallbacks(video, [currentPath], {
         onReady: () => fallback.setVisible(false),
         onFailed: () => {
-          fallback.setText(formatMemoryMediaHint(urls));
+          fallback.setText(formatMemoryMediaHint([currentPath]));
           fallback.setVisible(true);
         }
       });
       mediaDom = scene.add.dom(cx, cy, shell).setDepth(322).setScrollFactor(0);
-    } else if (primary) {
+    } else if (currentPath) {
       const img = document.createElement("img");
       img.alt = "Memory";
       img.style.width = "100%";
@@ -134,10 +144,10 @@ export function runMemorySequence(scene, title, items, onContinue) {
       img.style.margin = "0";
       img.style.borderRadius = "8px";
       img.style.boxShadow = "0 6px 18px rgba(0,0,0,0.45)";
-      img.src = `/${encodeURI(primary)}`;
+      img.src = `/${encodeURI(currentPath)}`;
       img.onload = () => fallback.setVisible(false);
       img.onerror = () => {
-        fallback.setText(`Couldn't load:\n${primary}`);
+        fallback.setText(`Couldn't load:\n${currentPath}`);
         fallback.setVisible(true);
       };
       shell.appendChild(img);
@@ -170,8 +180,16 @@ export function runMemorySequence(scene, title, items, onContinue) {
     if (finished) {
       return;
     }
-    if (index < items.length - 1) {
-      index += 1;
+    const item = items[itemIndex];
+    const paths = item?.paths || [];
+    if (pathIndex < paths.length - 1) {
+      pathIndex += 1;
+      mountStep();
+      return;
+    }
+    if (itemIndex < items.length - 1) {
+      itemIndex += 1;
+      pathIndex = 0;
       mountStep();
     } else {
       done();

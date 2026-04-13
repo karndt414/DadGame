@@ -36,8 +36,8 @@ const gameState = {
 const dungeons = [
   {
     id: "father_childhood",
-    name: "Father Childhood",
-    subtitle: "1980s Arcade Trench",
+    name: "The Forgotten Past",
+    subtitle: "How did you begin?",
     mood: "zone1",
     key: "dungeon-father-childhood",
     color: 0x6b8cff,
@@ -46,12 +46,12 @@ const dungeons = [
     popupId: 1,
     rewardAbility: "dodge",
     unlockTier: 2,
-    shrineQuestionId: "q02_adventure_game"
+    shrineQuestionIds: ["q02_adventure_game", "q04_prop_crew"]
   },
   {
     id: "my_childhood",
-    name: "My Childhood",
-    subtitle: "Early 2000s Hero Realm",
+    name: "Recent History",
+    subtitle: "What were you?",
     mood: "zone2",
     key: "dungeon-my-childhood",
     color: 0xd4a017,
@@ -60,12 +60,12 @@ const dungeons = [
     popupId: 2,
     rewardAbility: "shoot",
     unlockTier: 3,
-    shrineQuestionId: "q01_mini_golf"
+    shrineQuestionIds: ["q01_mini_golf"]
   },
   {
     id: "modern_day",
-    name: "Modern Day",
-    subtitle: "Campus Studio Grid",
+    name: "The Modern Era",
+    subtitle: "What have you become?",
     mood: "zone4",
     key: "dungeon-modern-day",
     color: 0x5ce1e6,
@@ -74,7 +74,7 @@ const dungeons = [
     popupId: 3,
     rewardAbility: "explosion",
     unlockTier: 4,
-    shrineQuestionId: "q03_grilling"
+    shrineQuestionIds: ["q03_grilling"]
   }
 ];
 
