@@ -92,6 +92,7 @@ export function runMemorySequence(scene, title, items, onContinue) {
     const urls = item.paths || [];
     const currentPath = urls[pathIndex] || "";
     const useVideo = item.kind === "video" || isVideoPath(currentPath);
+    musicManager.setVideoDuck(useVideo && urls.length > 0);
 
     const shell = document.createElement("div");
     shell.style.width = `${mediaWidth}px`;
@@ -119,6 +120,7 @@ export function runMemorySequence(scene, title, items, onContinue) {
       video.style.borderRadius = "8px";
       video.style.boxShadow = "0 6px 18px rgba(0,0,0,0.45)";
       video.onended = () => {
+        musicManager.setVideoDuck(false);
         if (itemIndex === items.length - 1 && pathIndex === urls.length - 1) {
           done();
         }
@@ -127,6 +129,7 @@ export function runMemorySequence(scene, title, items, onContinue) {
       attachVideoSrcWithFallbacks(video, [currentPath], {
         onReady: () => fallback.setVisible(false),
         onFailed: () => {
+          musicManager.setVideoDuck(false);
           fallback.setText(formatMemoryMediaHint([currentPath]));
           fallback.setVisible(true);
         }
@@ -164,6 +167,7 @@ export function runMemorySequence(scene, title, items, onContinue) {
       return;
     }
     finished = true;
+    musicManager.setVideoDuck(false);
     scene.input.keyboard.off("keydown-ENTER", onEnter);
     teardownMedia();
     scene.overlayBlock?.destroy();

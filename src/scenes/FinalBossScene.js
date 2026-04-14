@@ -334,18 +334,30 @@ export class FinalBossScene extends Phaser.Scene {
 
     let videoNode = null;
     if (finalUrls.some((u) => /\.(mp4|mov|webm)$/i.test(u))) {
+      musicManager.setVideoDuck(true);
       const video = document.createElement("video");
       video.controls = true;
       video.autoplay = true;
       video.playsInline = true;
-      video.style.width = "720px";
+      video.style.width = `${width}px`;
+      video.style.height = `${height}px`;
       video.style.maxWidth = "100%";
-      video.style.borderRadius = "8px";
+      video.style.maxHeight = "100%";
+      video.style.objectFit = "contain";
+      video.style.display = "block";
+      video.style.background = "#000000";
+      video.style.borderRadius = "0";
       attachVideoSrcWithFallbacks(video, finalUrls, {
         onReady: () => fallback.setVisible(false),
-        onFailed: () => fallback.setVisible(true)
+        onFailed: () => {
+          musicManager.setVideoDuck(false);
+          fallback.setVisible(true);
+        }
       });
-      videoNode = this.add.dom(width / 2, 304, video);
+      video.onended = () => {
+        musicManager.setVideoDuck(false);
+      };
+      videoNode = this.add.dom(width / 2, height / 2, video).setDepth(1000).setScrollFactor(0);
     }
 
     const end = this.add
@@ -359,6 +371,7 @@ export class FinalBossScene extends Phaser.Scene {
 
     this.input.keyboard.once("keydown-ENTER", () => {
       musicManager.playSfx("uiConfirm", { throttleMs: 70, gain: 0.045, pitch: 1.05 });
+      musicManager.setVideoDuck(false);
       if (videoNode?.node?.pause) {
         videoNode.node.pause();
       }

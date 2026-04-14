@@ -7,8 +7,12 @@ class MusicManager {
     this.started = false;
     this.mood = "title";
     this.currentTrack = null;
+    this.currentTrackBaseVolume = null;
     this.sfxLastAt = {};
     this.usingAssetTracks = true;
+    this.masterBaseGain = 0.17;
+    this.videoDuckFactor = 0.35;
+    this.duckFactor = 1;
     this.trackConfig = {
       title: { path: "assets/audio/Flying-HighFinal.wav", volume: 0.42, startAt: 0 },
       zone1: { path: "assets/audio/Flying-HighFinal.wav", volume: 0.48, startAt: 0 },
@@ -132,6 +136,7 @@ class MusicManager {
 
   ensureContext() {
     if (this.ctx) {
+      this.applyOutputVolume();
       return;
     }
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -140,8 +145,23 @@ class MusicManager {
     }
     this.ctx = new AudioCtx();
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.17;
+    this.master.gain.value = this.masterBaseGain;
     this.master.connect(this.ctx.destination);
+    this.applyOutputVolume();
+  }
+
+  applyOutputVolume() {
+    if (this.master) {
+      this.master.gain.value = this.masterBaseGain * this.duckFactor;
+    }
+    if (this.currentTrack) {
+      this.currentTrack.volume = (this.currentTrackBaseVolume ?? 0.5) * this.duckFactor;
+    }
+  }
+
+  setVideoDuck(active) {
+    this.duckFactor = active ? this.videoDuckFactor : 1;
+    this.applyOutputVolume();
   }
 
   async tryStart() {
@@ -199,6 +219,7 @@ class MusicManager {
     this.currentTrack.pause();
     this.currentTrack.src = "";
     this.currentTrack = null;
+    this.currentTrackBaseVolume = null;
   }
 
   async playTrackForMood(mood) {
@@ -216,7 +237,8 @@ class MusicManager {
 
     const track = new Audio(`/${encodeURI(config.path)}`);
     track.loop = true;
-    track.volume = config.volume ?? 0.5;
+    this.currentTrackBaseVolume = config.volume ?? 0.5;
+    track.volume = this.currentTrackBaseVolume * this.duckFactor;
     track.preload = "auto";
     track.playsInline = true;
 
@@ -239,9 +261,11 @@ class MusicManager {
 
       await track.play();
       this.currentTrack = track;
+      this.applyOutputVolume();
       return true;
     } catch {
       this.currentTrack = null;
+      this.currentTrackBaseVolume = null;
       return false;
     }
   }
