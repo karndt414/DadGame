@@ -30,6 +30,9 @@ const gameState = {
   },
   fairyHeartBonus: 0,
   bigFattyGiftClaimed: false,
+  deathCount: 0,
+  swordHintShownAfterFirstDeath: false,
+  overworldIntroMessage: "",
   memoryKeysCollected: 0,
   finalBossUnlocked: false,
   overworldMessage: "Three memory dungeons await."

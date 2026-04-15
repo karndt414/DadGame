@@ -46,6 +46,9 @@
     "relic": "assets/ui/relic_icon.svg",
     "popupFrame": "assets/ui/popup_frame.svg"
   },
+  "specialSprites": {
+    "bigFattyFairy": "assets/sprites/fairy_big_fatty.svg"
+  },
   "backgrounds": {
     "overworld": "assets/tiles/zone3_commerce_bg.svg",
     "dungeonFatherChildhood": "assets/tiles/zone1_meadow_bg.svg",

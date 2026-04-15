@@ -14,19 +14,41 @@ export class OverworldScene extends Phaser.Scene {
     super("overworld");
     this.secretRoomNodes = [];
     this.secretRoomPortal = null;
+    this.secretRoomWarpZone = null;
+    this.secretRoomExitZone = null;
+    this.secretFountain = null;
+    this.secretRoomStatusNode = null;
     this.bigFattyFairy = null;
+    this.secretWarpCooldownUntil = 0;
+    this.secretRoomMode = "overworld";
+    this.swordPopupNodes = [];
+    this.swordPopupActive = false;
+    this.swordHintNodes = [];
+    this.overworldIntroActive = false;
+    this.overworldIntroNodes = [];
   }
 
   create() {
     this.state = this.registry.get("state");
     this.dungeons = this.registry.get("dungeons") || [];
-    this.physics.world.setBounds(0, 0, 1280, 720);
+    this.worldWidth = 1680;
+    this.worldHeight = 720;
+    this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
+    this.secretWarpCooldownUntil = 0;
+    this.secretRoomMode = "overworld";
+    this.swordPopupNodes = [];
+    this.swordPopupActive = false;
+    this.swordHintNodes = [];
+    this.overworldIntroActive = false;
+    this.overworldIntroNodes = [];
 
     musicManager.setMood("zone3");
     musicManager.tryStart();
 
     this.add.image(640, 360, "bg-zone-3").setDisplaySize(1280, 720);
     this.add.rectangle(640, 360, 1280, 720, 0x06110b, 0.32);
+    this.add.rectangle(1440, 360, 400, 720, 0x08140d, 0.72).setDepth(0);
+    this.add.rectangle(1440, 360, 400, 720, 0x20382a, 0.14).setDepth(1);
 
     this.add
       .text(640, 56, "Memory Overworld", {
@@ -40,28 +62,17 @@ export class OverworldScene extends Phaser.Scene {
     this.player = this.physics.add.image(640, 610, PLAYER_TEXTURE_KEYS[Math.min(4, (this.state.abilityTier || 1) - 1)] || "player-hero-lv1");
     this.player.setDisplaySize(48, 48);
     this.player.setCollideWorldBounds(true);
+    this.player.setDepth(200);
     this.lastFootstepAt = 0;
 
     this.swordPickup = null;
-    if (!this.state.unlockedAbilities?.slash) {
-      this.swordPickup = this.add.image(640, 560, "fx-slash-lv1").setDisplaySize(74, 36).setDepth(90);
-      this.swordPickup.setTint(0xf5e6b8);
-      this.tweens.add({
-        targets: this.swordPickup,
-        y: this.swordPickup.y - 8,
-        duration: 800,
-        yoyo: true,
-        repeat: -1
-      });
-
-      this.swordPrompt = this.add
-        .text(640, 528, "Press E to equip the sword", {
-          fontSize: "20px",
-          color: "#f5e6b8",
-          stroke: "#000000",
-          strokeThickness: 3
-        })
-        .setOrigin(0.5);
+    this.swordPrompt = null;
+    if (!this.state.unlockedAbilities?.slash && (this.state.deathCount || 0) > 0) {
+      this.spawnSwordPickup();
+      if ((this.state.deathCount || 0) === 1 && !this.state.swordHintShownAfterFirstDeath) {
+        this.showNeedWeaponHint();
+        this.state.swordHintShownAfterFirstDeath = true;
+      }
     }
 
     this.cursors = this.input.keyboard.addKeys({
@@ -159,6 +170,11 @@ export class OverworldScene extends Phaser.Scene {
 
     this.syncFinalGateState();
     this.spawnSecretRoom();
+
+    if (this.state.overworldIntroMessage) {
+      this.playOverworldIntro(this.state.overworldIntroMessage);
+      this.state.overworldIntroMessage = "";
+    }
   }
 
   getAbilityHudText() {
@@ -201,18 +217,22 @@ export class OverworldScene extends Phaser.Scene {
     this.secretRoomNodes.forEach((node) => node.destroy());
     this.secretRoomNodes = [];
     this.secretRoomPortal = null;
+    this.secretRoomWarpZone = null;
+    this.secretRoomExitZone = null;
+    this.secretFountain = null;
+    this.secretRoomStatusNode = null;
     this.bigFattyFairy = null;
 
     if (!this.state.finalBossUnlocked) {
       return;
     }
 
-    const roomX = 1174;
+    const roomX = 1508;
     const roomY = 360;
     const roomFrame = this.add.rectangle(roomX, roomY, 180, 560, 0x13281a, 0.9).setStrokeStyle(4, 0x9af0b0, 0.9);
     const roomGlow = this.add.circle(roomX, roomY - 108, 70, 0x9af0b0, 0.16).setStrokeStyle(2, 0xc7f9d7, 0.7);
     const roomLabel = this.add
-      .text(roomX, 114, "Secret Room", {
+      .text(roomX, 114, "Big Fatty's Fountain", {
         fontSize: "26px",
         color: "#d8ffdf",
         stroke: "#000000",
@@ -220,10 +240,15 @@ export class OverworldScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    const fountainBase = this.add.circle(roomX, roomY + 112, 62, 0x7bcfbd, 0.34).setStrokeStyle(4, 0xd8fff0, 0.9);
+    const fountainPool = this.add.circle(roomX, roomY + 112, 40, 0x3fa8c7, 0.9).setStrokeStyle(3, 0xcff8ff, 0.9);
+    const fountainCore = this.add.circle(roomX, roomY + 112, 14, 0xe8fbff, 0.95);
+    const fountainMist = this.add.circle(roomX, roomY + 78, 28, 0xbdf4ff, 0.16);
+
     const portalRing = this.add.circle(roomX, roomY + 54, 44, 0x7cf0a1, 0.2).setStrokeStyle(4, 0xd7ffe4, 0.95);
     const portalCore = this.add.circle(roomX, roomY + 54, 18, 0xc9ffe0, 0.95);
     const fairyHalo = this.add.circle(roomX, roomY - 14, 34, 0xfff6b0, 0.16).setStrokeStyle(2, 0xfff1c7, 0.75);
-    const fairy = this.add.circle(roomX, roomY - 14, 16, 0xf6fbff, 0.96).setStrokeStyle(2, 0x95d8ff, 0.9);
+    const fairy = this.add.image(roomX, roomY - 14, "big-fatty-fairy").setDisplaySize(76, 76).setDepth(4);
     const fairyLabel = this.add
       .text(roomX, roomY + 20, this.state.bigFattyGiftClaimed ? "Big Fatty" : "Big Fatty", {
         fontSize: "24px",
@@ -245,13 +270,57 @@ export class OverworldScene extends Phaser.Scene {
 
     const sparkleA = this.add.circle(roomX - 44, roomY - 42, 5, 0xeaffb9, 0.95);
     const sparkleB = this.add.circle(roomX + 34, roomY + 10, 4, 0x9ef8ff, 0.9);
+    const warpHint = this.add
+      .text(1258, 356, "Touch the seam\nto reach the fountain", {
+        fontSize: "16px",
+        color: "#e8ffe9",
+        stroke: "#000000",
+        strokeThickness: 2,
+        align: "center",
+        wordWrap: { width: 140 }
+      })
+      .setOrigin(0.5);
 
-    [roomFrame, roomGlow, roomLabel, portalRing, portalCore, fairyHalo, fairy, fairyLabel, status, sparkleA, sparkleB].forEach((node) => {
+    [
+      roomFrame,
+      roomGlow,
+      roomLabel,
+      fountainBase,
+      fountainPool,
+      fountainCore,
+      fountainMist,
+      portalRing,
+      portalCore,
+      fairyHalo,
+      fairy,
+      fairyLabel,
+      status,
+      sparkleA,
+      sparkleB,
+      warpHint
+    ].forEach((node) => {
       this.secretRoomNodes.push(node);
     });
 
     this.bigFattyFairy = fairy;
     this.secretRoomPortal = portalCore;
+    this.secretFountain = fountainCore;
+    this.secretRoomStatusNode = status;
+
+    this.secretRoomWarpZone = {
+      x: 1278,
+      y: 360,
+      top: 88,
+      bottom: 632,
+      width: 24
+    };
+    this.secretRoomExitZone = {
+      x: 1458,
+      y: 360,
+      top: 88,
+      bottom: 632,
+      width: 24
+    };
 
     this.tweens.add({
       targets: [portalRing, portalCore, fairyHalo, fairy, sparkleA, sparkleB],
@@ -276,15 +345,184 @@ export class OverworldScene extends Phaser.Scene {
     this.state.hearts = this.state.maxHearts;
     this.state.overworldMessage = "Big Fatty gave you a bonus five hearts.";
 
-    this.bigFattyFairy?.setFillStyle(0xfff0b3, 0.98).setStrokeStyle(2, 0xffcf6e, 1);
-    if (this.secretRoomNodes.length) {
-      const statusNode = this.secretRoomNodes[this.secretRoomNodes.length - 3];
-      statusNode?.setText("+5 hearts claimed");
-    }
+    this.bigFattyFairy?.setTint(0xfff1b0);
+    this.secretRoomStatusNode?.setText("+5 hearts claimed");
 
     musicManager.playCelebration();
     musicManager.playSfx("pickup", { throttleMs: 90, gain: 0.07, pitch: 1.12 });
     this.setStatus("Big Fatty blesses you with +5 bonus hearts.");
+  }
+
+  spawnSwordPickup() {
+    if (this.swordPickup || this.state.unlockedAbilities?.slash) {
+      return;
+    }
+
+    this.swordPickup = this.add.image(640, 560, "fx-slash-lv1").setDisplaySize(74, 36).setDepth(90);
+    this.swordPickup.setTint(0xf5e6b8);
+    this.tweens.add({
+      targets: this.swordPickup,
+      y: this.swordPickup.y - 8,
+      duration: 800,
+      yoyo: true,
+      repeat: -1
+    });
+
+    this.swordPrompt = this.add
+      .text(640, 528, "Press E to equip the sword", {
+        fontSize: "20px",
+        color: "#f5e6b8",
+        stroke: "#000000",
+        strokeThickness: 3
+      })
+      .setOrigin(0.5);
+  }
+
+  showNeedWeaponHint() {
+    this.swordHintNodes.forEach((node) => node.destroy());
+    this.swordHintNodes = [];
+
+    const { width } = this.scale;
+    const hint = this.add
+      .text(width / 2, 156, "looks like you need a weapon", {
+        fontSize: "28px",
+        color: "#f5e6b8",
+        stroke: "#000000",
+        strokeThickness: 5
+      })
+      .setOrigin(0.5)
+      .setDepth(230)
+      .setScrollFactor(0);
+
+    this.swordHintNodes.push(hint);
+    this.tweens.add({
+      targets: hint,
+      alpha: { from: 0.25, to: 1 },
+      duration: 500,
+      yoyo: true,
+      repeat: 4
+    });
+
+    this.time.delayedCall(5000, () => {
+      this.swordHintNodes.forEach((node) => node.destroy());
+      this.swordHintNodes = [];
+    });
+  }
+
+  playOverworldIntro(message) {
+    if (!message || this.overworldIntroActive) {
+      return;
+    }
+
+    this.overworldIntroActive = true;
+    const { width, height } = this.scale;
+    const backdrop = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 1).setDepth(1000).setScrollFactor(0);
+    const text = this.add
+      .text(width / 2, height / 2, message, {
+        fontSize: "30px",
+        color: "#f5e6b8",
+        stroke: "#000000",
+        strokeThickness: 5,
+        align: "center",
+        wordWrap: { width: width * 0.8 }
+      })
+      .setOrigin(0.5)
+      .setDepth(1001)
+      .setScrollFactor(0);
+
+    this.overworldIntroNodes = [backdrop, text];
+    this.player.setVelocity(0, 0);
+    this.player.setVisible(false);
+
+    this.time.delayedCall(5000, () => {
+      this.overworldIntroNodes.forEach((node) => node.destroy());
+      this.overworldIntroNodes = [];
+      this.player.setVisible(true);
+      this.overworldIntroActive = false;
+    });
+  }
+
+  showSwordPickupPopup() {
+    if (this.swordPopupActive) {
+      return;
+    }
+
+    const { width, height } = this.scale;
+    this.swordPopupActive = true;
+    const backdrop = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.58).setDepth(240).setScrollFactor(0);
+    const frame = this.add.image(width / 2, height / 2, "ui-popup-frame").setDisplaySize(620, 270).setDepth(250).setScrollFactor(0);
+    const heading = this.add
+      .text(width / 2, height / 2 - 70, "Sword Acquired", {
+        fontSize: "36px",
+        color: "#f5e6b8",
+        stroke: "#000000",
+        strokeThickness: 5
+      })
+      .setOrigin(0.5)
+      .setDepth(251)
+      .setScrollFactor(0);
+    const icon = this.add.image(width / 2, height / 2 - 6, "fx-slash-lv1").setDisplaySize(118, 58).setDepth(251).setScrollFactor(0);
+    const text = this.add
+      .text(width / 2, height / 2 + 54, "Slash unlocked.\nClick to strike enemies.", {
+        fontSize: "22px",
+        color: "#dbe9d5",
+        align: "center"
+      })
+      .setOrigin(0.5)
+      .setDepth(251)
+      .setScrollFactor(0);
+    const hint = this.add
+      .text(width / 2, height / 2 + 98, "Click to continue", {
+        fontSize: "18px",
+        color: "#c5ffb8"
+      })
+      .setOrigin(0.5)
+      .setDepth(251)
+      .setScrollFactor(0);
+
+    this.swordPopupNodes = [backdrop, frame, heading, icon, text, hint];
+    musicManager.playCelebration();
+    musicManager.playSfx("uiConfirm", { throttleMs: 90, gain: 0.055, pitch: 1.12 });
+
+    const dismiss = () => {
+      if (!this.swordPopupActive) {
+        return;
+      }
+      this.swordPopupActive = false;
+      this.input.off("pointerdown", dismiss);
+      this.swordPopupNodes.forEach((node) => node.destroy());
+      this.swordPopupNodes = [];
+      this.setStatus("Sword equipped. Slash unlocked.");
+    };
+
+    this.input.once("pointerdown", dismiss);
+    this.time.delayedCall(1400, dismiss);
+  }
+
+  teleportToBigFattyFountain() {
+    if (!this.secretFountain) {
+      return;
+    }
+
+    this.secretRoomMode = "fountain";
+    this.secretWarpCooldownUntil = this.time.now + 900;
+    this.player.setVelocity(0, 0);
+    this.player.setPosition(this.secretFountain.x - 34, this.secretFountain.y + 86);
+    this.cameras.main.centerOn(this.secretFountain.x, this.secretFountain.y);
+    this.cameras.main.flash(180, 180, 255, 220);
+    musicManager.playSfx("uiConfirm", { throttleMs: 120, gain: 0.055, pitch: 1.08 });
+    this.setStatus("You arrive at Big Fatty's Fountain.");
+  }
+
+  teleportBackToOverworld() {
+    this.secretRoomMode = "overworld";
+    this.secretWarpCooldownUntil = this.time.now + 900;
+    this.player.setVelocity(0, 0);
+    this.player.setPosition(1260, 360);
+    this.cameras.main.centerOn(640, 360);
+    this.cameras.main.flash(180, 220, 180, 220);
+    musicManager.playSfx("uiConfirm", { throttleMs: 120, gain: 0.05, pitch: 0.98 });
+    this.setStatus("You step back into the overworld.");
   }
 
   setStatus(text) {
@@ -293,6 +531,14 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   update() {
+    if (this.overworldIntroActive) {
+      return;
+    }
+
+    if (this.swordPopupActive) {
+      return;
+    }
+
     const speed = 235;
     const vx = (this.cursors.left.isDown ? -1 : 0) + (this.cursors.right.isDown ? 1 : 0);
     const vy = (this.cursors.up.isDown ? -1 : 0) + (this.cursors.down.isDown ? 1 : 0);
@@ -302,6 +548,26 @@ export class OverworldScene extends Phaser.Scene {
       musicManager.playSfx("footstep", { throttleMs: 55, gain: 0.022, pitch: 0.98 });
     }
     this.player.body.setVelocity((vx / len) * speed, (vy / len) * speed);
+
+    if (this.state.finalBossUnlocked && this.time.now > this.secretWarpCooldownUntil) {
+      if (
+        this.secretRoomMode === "overworld" &&
+        this.secretRoomWarpZone &&
+        this.player.x >= this.secretRoomWarpZone.x &&
+        this.player.y >= this.secretRoomWarpZone.top &&
+        this.player.y <= this.secretRoomWarpZone.bottom
+      ) {
+        this.teleportToBigFattyFountain();
+      } else if (
+        this.secretRoomMode === "fountain" &&
+        this.secretRoomExitZone &&
+        this.player.x <= this.secretRoomExitZone.x &&
+        this.player.y >= this.secretRoomExitZone.top &&
+        this.player.y <= this.secretRoomExitZone.bottom
+      ) {
+        this.teleportBackToOverworld();
+      }
+    }
 
     if (Phaser.Input.Keyboard.JustDown(this.cursors.interact)) {
       this.tryInteract();
@@ -330,8 +596,7 @@ export class OverworldScene extends Phaser.Scene {
         this.swordPrompt?.destroy();
         this.swordPrompt = null;
         this.abilityText?.setText(this.getAbilityHudText());
-        this.setStatus("Sword equipped. Slash unlocked.");
-        musicManager.playSfx("pickup", { throttleMs: 90, gain: 0.055, pitch: 1.08 });
+        this.showSwordPickupPopup();
         return;
       }
     }

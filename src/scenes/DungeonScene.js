@@ -1762,8 +1762,13 @@ export class DungeonScene extends Phaser.Scene {
     });
 
     if (this.state.hearts <= 0) {
+      const isFirstDeath = (this.state.deathCount || 0) === 0;
       this.state.hearts = this.state.maxHearts;
-      this.state.overworldMessage = `Defeated in ${this.dungeon?.name || "the dungeon"}. Try again from the overworld.`;
+      this.state.deathCount = (this.state.deathCount || 0) + 1;
+      this.state.overworldMessage = isFirstDeath
+        ? "Looks like you need a weapon"
+        : `Defeated in ${this.dungeon?.name || "the dungeon"}. Try again from the overworld.`;
+      this.state.overworldIntroMessage = this.state.overworldMessage;
       this.scene.start("overworld");
     }
   }

@@ -25,9 +25,12 @@ export class TitleScene extends Phaser.Scene {
     };
     state.fairyHeartBonus = 0;
     state.bigFattyGiftClaimed = false;
+    state.deathCount = 0;
+    state.swordHintShownAfterFirstDeath = false;
     state.memoryKeysCollected = 3;
     state.finalBossUnlocked = true;
     state.overworldMessage = "Boss rush: skipping straight to the final fight.";
+    state.overworldIntroMessage = "";
     this.scene.start("final-boss");
   }
 
@@ -67,7 +70,7 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const start = this.add
-      .text(width / 2, 500, "Press ENTER to Begin, and claim your sword!", {
+      .text(width / 2, 500, "Press ENTER to Begin", {
         fontSize: "34px",
         color: "#8ae06e",
         stroke: "#000000",
@@ -87,6 +90,7 @@ export class TitleScene extends Phaser.Scene {
       musicManager.playSfx("uiConfirm", { throttleMs: 80, gain: 0.05, pitch: 1.08 });
       musicManager.usingAssetTracks = true;
       await musicManager.tryStart();
+      this.registry.get("state").overworldIntroMessage = "";
       this.scene.start("overworld");
     });
 

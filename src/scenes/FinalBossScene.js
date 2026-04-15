@@ -506,8 +506,13 @@ export class FinalBossScene extends Phaser.Scene {
     this.time.delayedCall(170, () => this.player?.clearTint());
 
     if (this.state.hearts <= 0) {
+      const isFirstDeath = (this.state.deathCount || 0) === 0;
       this.state.hearts = this.state.maxHearts;
-      this.state.overworldMessage = "Defeated by the Memory Warden. Return from the overworld when ready.";
+      this.state.deathCount = (this.state.deathCount || 0) + 1;
+      this.state.overworldMessage = isFirstDeath
+        ? "Looks like you need a weapon"
+        : "Defeated by the Memory Warden. Return from the overworld when ready.";
+      this.state.overworldIntroMessage = this.state.overworldMessage;
       this.scene.start("overworld");
     }
   }
@@ -674,6 +679,8 @@ export class FinalBossScene extends Phaser.Scene {
       this.state.abilityTier = 1;
       this.state.fairyHeartBonus = 0;
       this.state.bigFattyGiftClaimed = false;
+      this.state.deathCount = 0;
+      this.state.swordHintShownAfterFirstDeath = false;
       this.state.dungeonProgress = {
         father_childhood: { completed: false, memoryKey: false },
         my_childhood: { completed: false, memoryKey: false },
@@ -690,6 +697,7 @@ export class FinalBossScene extends Phaser.Scene {
       this.state.memoryKeysCollected = 0;
       this.state.finalBossUnlocked = false;
       this.state.overworldMessage = "Three memory dungeons await.";
+      this.state.overworldIntroMessage = "";
       this.scene.start("title");
     });
   }

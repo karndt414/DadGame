@@ -34,6 +34,7 @@ Keep **keys** stable; replace the **file** at the path shown.
 | `ui-heart-full` / `ui-heart-empty` | `ui/heart_full.svg`, `ui/heart_empty.svg` | Life |
 | `ui-shrine` / `ui-relic` | `ui/shrine_icon.svg`, `ui/relic_icon.svg` | Trivia / secret pickup |
 | `ui-popup-frame` | `ui/popup_frame.svg` | Memory video frame |
+| `big-fatty-fairy` | `sprites/fairy_big_fatty.svg` | Secret overworld fairy |
 | `fx-slash-lv1` … `fx-slash-lv4` | `sprites/effects/slash_lv*.svg` | Melee tier read |
 | `fx-crystal-shot` | `sprites/effects/crystal_shot.svg` | Ranged ability |
 | `fx-crystal-explosion` | `sprites/effects/crystal_explosion.svg` | Special |

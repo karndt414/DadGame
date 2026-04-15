@@ -44,6 +44,7 @@ export class BootScene extends Phaser.Scene {
     this.load.svg("ui-shrine", "assets/ui/shrine_icon.svg");
     this.load.svg("ui-relic", "assets/ui/relic_icon.svg");
     this.load.svg("ui-popup-frame", "assets/ui/popup_frame.svg");
+    this.load.svg("big-fatty-fairy", "assets/sprites/fairy_big_fatty.svg");
 
     this.load.svg("fx-slash-lv1", "assets/sprites/effects/slash_lv1.svg");
     this.load.svg("fx-slash-lv2", "assets/sprites/effects/slash_lv2.svg");
