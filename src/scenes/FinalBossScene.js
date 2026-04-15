@@ -9,6 +9,273 @@ export class FinalBossScene extends Phaser.Scene {
     super("final-boss");
   }
 
+  getBossPhase() {
+    if (!this.boss || !this.bossMaxHp) {
+      return 1;
+    }
+    const ratio = this.boss.hp / this.bossMaxHp;
+    if (ratio <= 0.34) {
+      return 3;
+    }
+    if (ratio <= 0.68) {
+      return 2;
+    }
+    return 1;
+  }
+
+  clearBossHazards() {
+    this.bossProjectiles?.forEach((projectile) => projectile.node?.destroy());
+    this.bossProjectiles = [];
+    this.bossRings?.forEach((ring) => ring.node?.destroy());
+    this.bossRings = [];
+    this.bossOrbiters?.forEach((orbiter) => orbiter.node?.destroy());
+    this.bossOrbiters = [];
+  }
+
+  spawnBossProjectileVolley(now, phase) {
+    const spreadCount = phase >= 3 ? 7 : phase === 2 ? 5 : 3;
+    const spreadArc = phase >= 3 ? 0.9 : 0.6;
+    const baseAngle = Phaser.Math.Angle.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
+    const speed = 190 + phase * 24;
+    const damage = phase >= 3 ? 2 : 1;
+
+    for (let i = 0; i < spreadCount; i += 1) {
+      const progress = spreadCount === 1 ? 0 : i / (spreadCount - 1);
+      const angle = baseAngle + Phaser.Math.Linear(-spreadArc, spreadArc, progress);
+      const projectile = this.add.circle(this.boss.x, this.boss.y, 11, phase >= 3 ? 0xff7b7b : 0x9fe8ff, 0.92);
+      projectile.setStrokeStyle(3, 0x180d0d, 0.8);
+      this.bossProjectiles.push({
+        node: projectile,
+        x: this.boss.x,
+        y: this.boss.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        speed,
+        damage,
+        lifeUntil: now + 3200,
+        homingStrength: phase >= 3 ? 0.045 : phase === 2 ? 0.03 : 0.02
+      });
+    }
+
+    musicManager.playSfx("enemyShoot", { throttleMs: 60, gain: 0.045, pitch: 0.88 + phase * 0.06 });
+  }
+
+  spawnBossOrbiters(now, phase) {
+    const orbiterCount = phase >= 3 ? 3 : 2;
+    const baseRadius = 66 + phase * 6;
+    const spinDirection = now % 2 === 0 ? 1 : -1;
+
+    for (let i = 0; i < orbiterCount; i += 1) {
+      const angle = (Math.PI * 2 * i) / orbiterCount;
+      const orbiter = this.add.circle(this.boss.x, this.boss.y, 12, phase >= 3 ? 0xffd46d : 0xc9f4c7, 0.9);
+      orbiter.setStrokeStyle(3, 0x1b201d, 0.85);
+      this.bossOrbiters.push({
+        node: orbiter,
+        angle,
+        radius: baseRadius + i * 10,
+        spin: (0.018 + phase * 0.004) * spinDirection,
+        damage: phase >= 3 ? 2 : 1
+      });
+    }
+
+    musicManager.playSfx("special", { throttleMs: 120, gain: 0.04, pitch: 0.88 + phase * 0.04 });
+  }
+
+  updateBossHazards(now, deltaSeconds) {
+    const playerX = this.player.x;
+    const playerY = this.player.y;
+
+    this.bossProjectiles = (this.bossProjectiles || []).filter((projectile) => {
+      projectile.x += projectile.vx * deltaSeconds;
+      projectile.y += projectile.vy * deltaSeconds;
+
+      const steerAngle = Phaser.Math.Angle.Between(projectile.x, projectile.y, playerX, playerY);
+      const targetVx = Math.cos(steerAngle) * projectile.speed;
+      const targetVy = Math.sin(steerAngle) * projectile.speed;
+      projectile.vx = Phaser.Math.Linear(projectile.vx, targetVx, projectile.homingStrength);
+      projectile.vy = Phaser.Math.Linear(projectile.vy, targetVy, projectile.homingStrength);
+
+      projectile.node.setPosition(projectile.x, projectile.y);
+      projectile.lifeUntil -= deltaSeconds * 1000;
+
+      const dist = Phaser.Math.Distance.Between(projectile.x, projectile.y, playerX, playerY);
+      if (dist < 28) {
+        this.takeDamage(projectile.damage);
+        projectile.node.destroy();
+        return false;
+      }
+
+      if (projectile.lifeUntil <= 0 || projectile.x < -80 || projectile.x > this.scale.width + 80 || projectile.y < -80 || projectile.y > this.scale.height + 80) {
+        projectile.node.destroy();
+        return false;
+      }
+
+      return true;
+    });
+
+    this.bossRings = (this.bossRings || []).filter((ring) => {
+      ring.radius += ring.expandSpeed * deltaSeconds;
+      ring.lifeUntil -= deltaSeconds * 1000;
+      ring.node.setPosition(this.boss.x, this.boss.y);
+      ring.node.setRadius(ring.radius);
+      ring.node.setAlpha(Math.max(0, 0.16 - ring.radius / 2400));
+
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.boss.x, this.boss.y);
+      const hitBand = Math.abs(dist - ring.radius) <= ring.thickness;
+      if (hitBand && !ring.hitPlayer) {
+        ring.hitPlayer = true;
+        this.takeDamage(ring.damage);
+      }
+
+      if (ring.lifeUntil <= 0 || ring.radius > Math.max(this.scale.width, this.scale.height)) {
+        ring.node.destroy();
+        return false;
+      }
+
+      return true;
+    });
+
+    this.bossOrbiters = (this.bossOrbiters || []).filter((orbiter) => {
+      orbiter.angle += orbiter.spin;
+      const orbitX = this.boss.x + Math.cos(orbiter.angle) * orbiter.radius;
+      const orbitY = this.boss.y + Math.sin(orbiter.angle) * orbiter.radius;
+      orbiter.node.setPosition(orbitX, orbitY);
+
+      if (Phaser.Math.Distance.Between(orbitX, orbitY, playerX, playerY) < 30) {
+        this.takeDamage(orbiter.damage);
+      }
+
+      if (!this.boss) {
+        orbiter.node.destroy();
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  updateBossBehavior(now) {
+    if (!this.boss) {
+      return;
+    }
+
+    const phase = this.getBossPhase();
+    if (phase !== this.bossPhase) {
+      this.bossPhase = phase;
+      this.bossPhaseUntil = now + 900;
+      this.boss.setTint(phase === 3 ? 0xffb17d : phase === 2 ? 0x93d7ff : 0xffffff);
+      this.cameras.main.shake(180, 0.004 + phase * 0.001);
+      this.time.delayedCall(650, () => this.boss?.clearTint());
+      this.clearBossHazards();
+      this.spawnBossOrbiters(now, phase);
+      this.bossNextVolleyAt = now + 240;
+      this.bossNextOrbitAt = now + 1400;
+      this.bossNextDashAt = now + 900;
+    }
+
+    const playerVector = new Phaser.Math.Vector2(this.player.x - this.boss.x, this.player.y - this.boss.y);
+    const distance = playerVector.length() || 1;
+    playerVector.normalize();
+    const sideways = new Phaser.Math.Vector2(-playerVector.y, playerVector.x);
+    const strafeDirection = Math.sin(now / (640 - phase * 40)) >= 0 ? 1 : -1;
+    const chaseSpeed = [112, 138, 162][phase - 1];
+    const strafeSpeed = [28, 44, 60][phase - 1] * strafeDirection;
+
+    const targetX = playerVector.x * chaseSpeed + sideways.x * strafeSpeed;
+    const targetY = playerVector.y * chaseSpeed + sideways.y * strafeSpeed;
+    this.boss.body.setVelocity(targetX, targetY);
+
+    if (now >= (this.bossNextDashAt || 0)) {
+      this.bossNextDashAt = now + [2300, 1850, 1450][phase - 1];
+      this.bossDashEndAt = now + 180;
+      this.bossDashVector = new Phaser.Math.Vector2(this.player.x - this.boss.x, this.player.y - this.boss.y);
+      if (this.bossDashVector.lengthSq() < 0.001) {
+        this.bossDashVector.set(1, 0);
+      } else {
+        this.bossDashVector.normalize();
+      }
+      this.bossDashSpeed = [320, 360, 410][phase - 1];
+      this.boss.setTint(0xffe28c);
+      musicManager.playSfx("bossDash", { throttleMs: 65, gain: 0.06, pitch: 0.94 + phase * 0.05 });
+      this.time.delayedCall(110, () => this.boss?.clearTint());
+      this.hitSparkFx(this.boss.x + this.bossDashVector.x * 26, this.boss.y + this.bossDashVector.y * 26, 0xffe28c, 1.3 + phase * 0.15);
+    }
+
+    if (this.bossDashEndAt && now < this.bossDashEndAt) {
+      this.boss.body.setVelocity(this.bossDashVector.x * this.bossDashSpeed, this.bossDashVector.y * this.bossDashSpeed);
+    }
+
+    if (now >= (this.bossNextVolleyAt || 0)) {
+      this.bossNextVolleyAt = now + [2400, 1850, 1450][phase - 1];
+      this.spawnBossProjectileVolley(now, phase);
+    }
+
+    if (phase >= 3 && now >= (this.bossNextOrbitAt || 0)) {
+      this.bossNextOrbitAt = now + 3900;
+      this.spawnBossOrbiters(now, phase);
+    }
+
+    if (this.bossPhaseUntil && now >= this.bossPhaseUntil) {
+      this.bossPhaseUntil = 0;
+      this.boss.clearTint();
+    }
+
+    if (distance < 56) {
+      this.takeDamage(phase >= 3 ? 2 : 1);
+    }
+  }
+
+  tryShoot(time) {
+    if (time < this.shootCooldown || this.overlayBlock) {
+      return;
+    }
+    if (!this.state.unlockedAbilities?.shoot) {
+      return;
+    }
+
+    const pointer = this.input.activePointer;
+    const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.worldX, pointer.worldY);
+    const distance = 320 + this.abilityTier * 24;
+    const toX = this.player.x + Math.cos(angle) * distance;
+    const toY = this.player.y + Math.sin(angle) * distance;
+
+    this.shootCooldown = time + Math.max(260, 760 - this.abilityTier * 60);
+    musicManager.playSfx("shoot", { throttleMs: 55, gain: 0.046 });
+
+    const shot = this.add.image(this.player.x, this.player.y, "fx-crystal-shot");
+    shot.setDisplaySize(26, 26).setRotation(angle + Math.PI / 2);
+    this.tweens.add({
+      targets: shot,
+      x: toX,
+      y: toY,
+      alpha: 0,
+      duration: 210,
+      onComplete: () => shot.destroy()
+    });
+
+    const shotWidth = 34;
+    const shotDamage = Math.max(2, 2 + (this.abilityTier >= 4 ? 1 : 0));
+    const dirX = Math.cos(angle);
+    const dirY = Math.sin(angle);
+
+    const hitAlongPath = (target) => {
+      const relX = target.x - this.player.x;
+      const relY = target.y - this.player.y;
+      const forward = relX * dirX + relY * dirY;
+      if (forward < 0 || forward > distance) {
+        return false;
+      }
+      const perp = Math.abs(relX * dirY - relY * dirX);
+      return perp < shotWidth;
+    };
+
+    if (this.boss && hitAlongPath(this.boss)) {
+      this.boss.hp -= shotDamage;
+      this.bossHpText.setText(`Boss HP: ${this.boss.hp}`);
+      this.hitSparkFx(this.boss.x, this.boss.y, 0x9fe8ff, 1.9 + this.abilityTier * 0.15);
+    }
+  }
+
   create() {
     const { width, height } = this.scale;
     this.physics.world.resume();
@@ -59,7 +326,19 @@ export class FinalBossScene extends Phaser.Scene {
     this.boss = this.physics.add.image(width - 220, height / 2, "boss-memory-warden");
     this.boss.setDisplaySize(112, 112);
     this.boss.body.setCollideWorldBounds(true);
-    this.boss.hp = 22;
+    this.bossMaxHp = 50;
+    this.boss.hp = this.bossMaxHp;
+    this.bossPhase = 1;
+    this.bossNextDashAt = this.time.now + 900;
+    this.bossNextVolleyAt = this.time.now + 520;
+    this.bossNextOrbitAt = this.time.now + 2700;
+    this.bossDashEndAt = 0;
+    this.bossDashVector = new Phaser.Math.Vector2(0, 0);
+    this.bossDashSpeed = 0;
+    this.bossPhaseUntil = 0;
+    this.bossProjectiles = [];
+    this.bossRings = [];
+    this.bossOrbiters = [];
 
     this.bossHpText = this.add.text(width - 44, 26, `Boss HP: ${this.boss.hp}`, {
       fontSize: "26px",
@@ -75,6 +354,7 @@ export class FinalBossScene extends Phaser.Scene {
       left: "A",
       down: "S",
       right: "D",
+      shoot: "F",
       dodge: "SHIFT",
       special: "SPACE"
     });
@@ -111,6 +391,11 @@ export class FinalBossScene extends Phaser.Scene {
       return;
     }
 
+    const now = this.time.now;
+    const deltaSeconds = Math.min(0.05, (this.game.loop.delta || 16.7) / 1000);
+    this.updateBossBehavior(now);
+    this.updateBossHazards(now, deltaSeconds);
+
     if (this.time.now < this.dodgeBurstUntil) {
       const dashSpeed = 620 + this.abilityTier * 40;
       this.player.body.setVelocity(this.dodgeVector.x * dashSpeed, this.dodgeVector.y * dashSpeed);
@@ -126,11 +411,12 @@ export class FinalBossScene extends Phaser.Scene {
       this.player.body.setVelocity((vx / len) * speed, (vy / len) * speed);
     }
 
-    const dir = new Phaser.Math.Vector2(this.player.x - this.boss.x, this.player.y - this.boss.y).normalize();
-    this.boss.body.setVelocity(dir.x * 105, dir.y * 105);
-
     if (Phaser.Input.Keyboard.JustDown(this.cursors.dodge)) {
       this.tryDodge();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.shoot)) {
+      this.tryShoot(now);
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.cursors.special)) {
@@ -304,10 +590,11 @@ export class FinalBossScene extends Phaser.Scene {
   }
 
   endRun() {
+    this.clearBossHazards();
     this.boss.destroy();
     this.boss = null;
     musicManager.playSfx("uiConfirm", { throttleMs: 120, gain: 0.065, pitch: 1.16 });
-    musicManager.playCelebration();
+    musicManager.stopAll({ resetStarted: true });
 
     const { width, height } = this.scale;
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
@@ -336,6 +623,7 @@ export class FinalBossScene extends Phaser.Scene {
     if (finalUrls.some((u) => /\.(mp4|mov|webm)$/i.test(u))) {
       musicManager.setVideoDuck(true);
       const video = document.createElement("video");
+      video.preload = "auto";
       video.controls = true;
       video.autoplay = true;
       video.playsInline = true;
@@ -348,7 +636,10 @@ export class FinalBossScene extends Phaser.Scene {
       video.style.background = "#000000";
       video.style.borderRadius = "0";
       attachVideoSrcWithFallbacks(video, finalUrls, {
-        onReady: () => fallback.setVisible(false),
+        onReady: () => {
+          fallback.setVisible(false);
+          void video.play().catch(() => {});
+        },
         onFailed: () => {
           musicManager.setVideoDuck(false);
           fallback.setVisible(true);
@@ -372,6 +663,7 @@ export class FinalBossScene extends Phaser.Scene {
     this.input.keyboard.once("keydown-ENTER", () => {
       musicManager.playSfx("uiConfirm", { throttleMs: 70, gain: 0.045, pitch: 1.05 });
       musicManager.setVideoDuck(false);
+      musicManager.stopAll({ resetStarted: true });
       if (videoNode?.node?.pause) {
         videoNode.node.pause();
       }

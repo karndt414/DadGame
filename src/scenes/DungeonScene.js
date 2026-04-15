@@ -704,7 +704,7 @@ export class DungeonScene extends Phaser.Scene {
       .setScrollFactor(0);
 
     const promptText = this.add
-      .text(width / 2, height / 2 + 124, "Power active now. Keep pushing forward.", {
+      .text(width / 2, height / 2 + 124, "Click to use your sword.", {
         fontSize: "18px",
         color: "#c8d1c2"
       })
@@ -1590,6 +1590,13 @@ export class DungeonScene extends Phaser.Scene {
     return (this.damageBonus || 0) * 0.12;
   }
 
+  getTriviaRewardType(question, index) {
+    const rewardTypes = Array.isArray(question?.rewards) && question.rewards.length
+      ? question.rewards
+      : CAPSULE_REWARD_SEQUENCE.map((reward) => reward.type);
+    return rewardTypes[index] || rewardTypes[index % rewardTypes.length] || CAPSULE_REWARD_SEQUENCE[index % CAPSULE_REWARD_SEQUENCE.length].type;
+  }
+
   tryInteract() {
     if (this.overlayBlock) {
       return;
@@ -1628,7 +1635,12 @@ export class DungeonScene extends Phaser.Scene {
       .setScrollFactor(0);
 
     this.currentTriviaShrine = shrine;
-    this.currentQuestion = this.state.trivia.find((q) => q.id === shrine?.questionId) || this.state.trivia[0];
+    this.currentQuestion = this.state.trivia.find((q) => q.id === shrine?.questionId) || this.state.trivia[0] || null;
+
+    if (!this.currentQuestion) {
+      this.closeQuestion();
+      return;
+    }
 
     const title = this.add.text(120, 120, "Memory Shrine", {
       fontSize: "36px",
@@ -1648,7 +1660,7 @@ export class DungeonScene extends Phaser.Scene {
       }).setScrollFactor(0);
     });
 
-    const footer = this.add.text(120, 520, "Press 1-4 to answer", {
+    const footer = this.add.text(120, 520, "Pick a blessing: each answer grants a different powerup", {
       fontSize: "22px",
       color: "#d1d4ca"
     }).setScrollFactor(0);
@@ -1665,32 +1677,21 @@ export class DungeonScene extends Phaser.Scene {
     }
 
     const activeTriviaShrine = this.currentTriviaShrine;
-    const correct = selectedIndex === this.currentQuestion.correctIndex;
-    if (correct) {
-      musicManager.playSfx("uiConfirm", { throttleMs: 100, gain: 0.05, pitch: 1.1 });
-      this.setStatus("Correct. A memory is revealed.");
-      if (activeTriviaShrine?.node) {
-        activeTriviaShrine.node.destroy();
-        activeTriviaShrine.collected = true;
-        const dungeonId = this.dungeon?.id || "dungeon";
-        const collectedShrines = this.state.upgrades.collectedTriviaShrines[dungeonId] || [];
-        if (!collectedShrines.includes(activeTriviaShrine.key)) {
-          collectedShrines.push(activeTriviaShrine.key);
-          this.state.upgrades.collectedTriviaShrines[dungeonId] = collectedShrines;
-        }
+    const rewardType = this.getTriviaRewardType(this.currentQuestion, selectedIndex);
+    this.applyCapsuleReward(rewardType);
+    musicManager.playSfx("uiConfirm", { throttleMs: 100, gain: 0.05, pitch: 1.08 });
+
+    if (activeTriviaShrine?.node) {
+      activeTriviaShrine.node.destroy();
+      activeTriviaShrine.collected = true;
+      const dungeonId = this.dungeon?.id || "dungeon";
+      const collectedShrines = this.state.upgrades.collectedTriviaShrines[dungeonId] || [];
+      if (!collectedShrines.includes(activeTriviaShrine.key)) {
+        collectedShrines.push(activeTriviaShrine.key);
+        this.state.upgrades.collectedTriviaShrines[dungeonId] = collectedShrines;
       }
-      this.closeQuestion();
-      if (activeTriviaShrine?.memoryItem) {
-        runMemorySequence(this, "Trivia Memory", [activeTriviaShrine.memoryItem], () => {
-          this.setStatus("Trivia shrine cleared. The memory is restored.");
-        });
-      }
-      return;
     }
 
-    musicManager.playSfx("hurt", { throttleMs: 70, gain: 0.05, pitch: 0.9 });
-    this.takeDamage(1);
-    this.setStatus(`Wrong answer. Hint: ${this.currentQuestion.hint}`);
     this.closeQuestion();
   }
 
@@ -1703,13 +1704,14 @@ export class DungeonScene extends Phaser.Scene {
     this.answerKeys = null;
     this.answerListeners = null;
 
-    this.questionNodes.forEach((n) => n.destroy());
+    this.questionNodes.forEach((node) => node.destroy());
     this.questionNodes = [];
 
     if (this.overlayBlock) {
       this.overlayBlock.destroy();
       this.overlayBlock = null;
     }
+
     this.currentQuestion = null;
     this.currentTriviaShrine = null;
     musicManager.playSfx("uiConfirm", { throttleMs: 70, gain: 0.035, pitch: 0.95 });

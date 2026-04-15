@@ -1,23 +1,22 @@
 {
-  "format": "multiple-choice",
+  "format": "reward-selection",
   "rules": {
     "mandatory": false,
-    "onCorrect": ["heal_1", "grant_random_powerup", "reveal_secret_hint"],
-    "onWrong": ["lose_1_heart_or_remove_temp_buff", "show_hint", "allow_retry"]
+    "eachChoiceGrants": "a different powerup",
+    "noWrongAnswers": true
   },
   "questions": [
     {
-      "id": "q01_mini_golf",
-      "zone": "my_childhood",
-      "prompt": "In my childhood era, which event belongs in this memory dungeon?",
+      "id": "q01_birthday_party",
+      "zone": "any",
+      "prompt": "What was my coolest birthday party ever?",
       "choices": [
-        "My 5th birthday party",
-        "High school graduation",
-        "Family winter trip",
-        "First job celebration"
+        "13th",
+        "18th",
+        "5th",
+        "2nd"
       ],
-      "correctIndex": 0,
-      "hint": "Think of a playful birthday moment from early years."
+      "rewards": ["heart", "shield", "damage", "cooldown"]
     },
     {
       "id": "q02_adventure_game",
@@ -29,8 +28,7 @@
         "A strict exam preparation montage",
         "A road trip speedrun"
       ],
-      "correctIndex": 0,
-      "hint": "Think old-school hero energy and wonder."
+      "rewards": ["shield", "cooldown", "heart", "damage"]
     },
     {
       "id": "q03_grilling",
@@ -42,8 +40,7 @@
         "Fishing tournament",
         "Wood carving"
       ],
-      "correctIndex": 0,
-      "hint": "It is the one that fills the yard with dinner-time smoke and laughter."
+      "rewards": ["damage", "heart", "cooldown", "shield"]
     },
     {
       "id": "q04_prop_crew",
@@ -55,8 +52,7 @@
         "Chess captain",
         "Robotics nationals"
       ],
-      "correctIndex": 0,
-      "hint": "It supported the band from behind the scenes."
+      "rewards": ["cooldown", "damage", "shield", "heart"]
     },
     {
       "id": "q05_fill_custom",
@@ -68,8 +64,7 @@
         "Choice C",
         "Choice D"
       ],
-      "correctIndex": 0,
-      "hint": "Add a personal clue here."
+      "rewards": ["heart", "damage", "shield", "cooldown"]
     }
   ]
 }

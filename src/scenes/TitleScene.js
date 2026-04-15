@@ -6,6 +6,29 @@ export class TitleScene extends Phaser.Scene {
     super("title");
   }
 
+  startBossRush() {
+    const state = this.registry.get("state");
+    state.hearts = state.maxHearts;
+    state.unlockedAbilities = { slash: true, dodge: true, shoot: true, explosion: true };
+    state.abilityTier = 5;
+    state.dungeonProgress = {
+      father_childhood: { completed: true, memoryKey: true },
+      my_childhood: { completed: true, memoryKey: true },
+      modern_day: { completed: true, memoryKey: true }
+    };
+    state.upgrades = {
+      damageLevel: 3,
+      cooldownLevel: 3,
+      maxHeartUpgrades: 0,
+      shieldCharges: 0,
+      secretMemories: []
+    };
+    state.memoryKeysCollected = 3;
+    state.finalBossUnlocked = true;
+    state.overworldMessage = "Boss rush: skipping straight to the final fight.";
+    this.scene.start("final-boss");
+  }
+
   create() {
     const { width, height } = this.scale;
     musicManager.setMood("title");
@@ -63,6 +86,11 @@ export class TitleScene extends Phaser.Scene {
       musicManager.usingAssetTracks = true;
       await musicManager.tryStart();
       this.scene.start("overworld");
+    });
+
+    this.input.keyboard.once("keydown-B", () => {
+      musicManager.playSfx("uiConfirm", { throttleMs: 80, gain: 0.05, pitch: 1.18 });
+      this.startBossRush();
     });
 
     this.input.once("pointerdown", async () => {

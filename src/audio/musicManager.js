@@ -222,6 +222,17 @@ class MusicManager {
     this.currentTrackBaseVolume = null;
   }
 
+  stopAll({ resetStarted = false } = {}) {
+    if (this.timer) {
+      window.clearInterval(this.timer);
+      this.timer = null;
+    }
+    this.stopCurrentTrack();
+    if (resetStarted) {
+      this.started = false;
+    }
+  }
+
   async playTrackForMood(mood) {
     const config = this.trackConfig[mood];
     if (!config?.path) {

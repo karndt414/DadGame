@@ -77,11 +77,11 @@ export function runMemorySequence(scene, title, items, onContinue) {
     const item = items[itemIndex];
     const paths = item?.paths || [];
     if (paths.length > 1 && pathIndex < paths.length - 1) {
-      hint.setText(`Memory ${itemIndex + 1} of ${total} — press ENTER for next part`);
+      hint.setText(`Memory ${itemIndex + 1} of ${total} — click to continue`);
     } else if (itemIndex < total - 1) {
-      hint.setText(`Memory ${itemIndex + 1} of ${total} — press ENTER for next`);
+      hint.setText(`Memory ${itemIndex + 1} of ${total} — click to continue`);
     } else {
-      hint.setText(`Memory ${total} of ${total} — press ENTER to continue`);
+      hint.setText(`Memory ${total} of ${total} — click to continue`);
     }
   };
 
@@ -119,6 +119,7 @@ export function runMemorySequence(scene, title, items, onContinue) {
       video.style.margin = "0";
       video.style.borderRadius = "8px";
       video.style.boxShadow = "0 6px 18px rgba(0,0,0,0.45)";
+      video.onclick = () => onAdvance();
       video.onended = () => {
         musicManager.setVideoDuck(false);
         if (itemIndex === items.length - 1 && pathIndex === urls.length - 1) {
@@ -148,6 +149,7 @@ export function runMemorySequence(scene, title, items, onContinue) {
       img.style.borderRadius = "8px";
       img.style.boxShadow = "0 6px 18px rgba(0,0,0,0.45)";
       img.src = `/${encodeURI(currentPath)}`;
+      img.onclick = () => onAdvance();
       img.onload = () => fallback.setVisible(false);
       img.onerror = () => {
         fallback.setText(`Couldn't load:\n${currentPath}`);
@@ -168,7 +170,7 @@ export function runMemorySequence(scene, title, items, onContinue) {
     }
     finished = true;
     musicManager.setVideoDuck(false);
-    scene.input.keyboard.off("keydown-ENTER", onEnter);
+    scene.input.off("pointerdown", onAdvance);
     teardownMedia();
     scene.overlayBlock?.destroy();
     scene.overlayBlock = null;
@@ -180,7 +182,7 @@ export function runMemorySequence(scene, title, items, onContinue) {
     onContinue();
   };
 
-  const onEnter = () => {
+  const onAdvance = () => {
     if (finished) {
       return;
     }
@@ -200,6 +202,6 @@ export function runMemorySequence(scene, title, items, onContinue) {
     }
   };
 
-  scene.input.keyboard.on("keydown-ENTER", onEnter);
+  scene.input.on("pointerdown", onAdvance);
   mountStep();
 }
