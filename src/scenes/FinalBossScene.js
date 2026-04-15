@@ -672,6 +672,8 @@ export class FinalBossScene extends Phaser.Scene {
       this.state.secretRelicFound = false;
       this.state.unlockedAbilities = { slash: false, dodge: false, shoot: false, explosion: false };
       this.state.abilityTier = 1;
+      this.state.fairyHeartBonus = 0;
+      this.state.bigFattyGiftClaimed = false;
       this.state.dungeonProgress = {
         father_childhood: { completed: false, memoryKey: false },
         my_childhood: { completed: false, memoryKey: false },

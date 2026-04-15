@@ -12,6 +12,9 @@ const HUB_ENTRANCES = [
 export class OverworldScene extends Phaser.Scene {
   constructor() {
     super("overworld");
+    this.secretRoomNodes = [];
+    this.secretRoomPortal = null;
+    this.bigFattyFairy = null;
   }
 
   create() {
@@ -155,6 +158,7 @@ export class OverworldScene extends Phaser.Scene {
       .setOrigin(0, 0);
 
     this.syncFinalGateState();
+    this.spawnSecretRoom();
   }
 
   getAbilityHudText() {
@@ -193,6 +197,96 @@ export class OverworldScene extends Phaser.Scene {
     }
   }
 
+  spawnSecretRoom() {
+    this.secretRoomNodes.forEach((node) => node.destroy());
+    this.secretRoomNodes = [];
+    this.secretRoomPortal = null;
+    this.bigFattyFairy = null;
+
+    if (!this.state.finalBossUnlocked) {
+      return;
+    }
+
+    const roomX = 1174;
+    const roomY = 360;
+    const roomFrame = this.add.rectangle(roomX, roomY, 180, 560, 0x13281a, 0.9).setStrokeStyle(4, 0x9af0b0, 0.9);
+    const roomGlow = this.add.circle(roomX, roomY - 108, 70, 0x9af0b0, 0.16).setStrokeStyle(2, 0xc7f9d7, 0.7);
+    const roomLabel = this.add
+      .text(roomX, 114, "Secret Room", {
+        fontSize: "26px",
+        color: "#d8ffdf",
+        stroke: "#000000",
+        strokeThickness: 3
+      })
+      .setOrigin(0.5);
+
+    const portalRing = this.add.circle(roomX, roomY + 54, 44, 0x7cf0a1, 0.2).setStrokeStyle(4, 0xd7ffe4, 0.95);
+    const portalCore = this.add.circle(roomX, roomY + 54, 18, 0xc9ffe0, 0.95);
+    const fairyHalo = this.add.circle(roomX, roomY - 14, 34, 0xfff6b0, 0.16).setStrokeStyle(2, 0xfff1c7, 0.75);
+    const fairy = this.add.circle(roomX, roomY - 14, 16, 0xf6fbff, 0.96).setStrokeStyle(2, 0x95d8ff, 0.9);
+    const fairyLabel = this.add
+      .text(roomX, roomY + 20, this.state.bigFattyGiftClaimed ? "Big Fatty" : "Big Fatty", {
+        fontSize: "24px",
+        color: "#fff4b8",
+        stroke: "#000000",
+        strokeThickness: 3
+      })
+      .setOrigin(0.5);
+    const status = this.add
+      .text(roomX, roomY + 300, this.state.bigFattyGiftClaimed ? "+5 hearts already claimed" : "Press E to meet Big Fatty", {
+        fontSize: "18px",
+        color: this.state.bigFattyGiftClaimed ? "#c9dfcf" : "#edf7d8",
+        stroke: "#000000",
+        strokeThickness: 2,
+        align: "center",
+        wordWrap: { width: 150 }
+      })
+      .setOrigin(0.5);
+
+    const sparkleA = this.add.circle(roomX - 44, roomY - 42, 5, 0xeaffb9, 0.95);
+    const sparkleB = this.add.circle(roomX + 34, roomY + 10, 4, 0x9ef8ff, 0.9);
+
+    [roomFrame, roomGlow, roomLabel, portalRing, portalCore, fairyHalo, fairy, fairyLabel, status, sparkleA, sparkleB].forEach((node) => {
+      this.secretRoomNodes.push(node);
+    });
+
+    this.bigFattyFairy = fairy;
+    this.secretRoomPortal = portalCore;
+
+    this.tweens.add({
+      targets: [portalRing, portalCore, fairyHalo, fairy, sparkleA, sparkleB],
+      alpha: { from: 0.55, to: 1 },
+      scale: { from: 0.96, to: 1.08 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1
+    });
+  }
+
+  claimBigFattyGift() {
+    if (this.state.bigFattyGiftClaimed) {
+      this.setStatus("Big Fatty already gave you the heart blessing.");
+      musicManager.playSfx("uiConfirm", { throttleMs: 80, gain: 0.04, pitch: 0.95 });
+      return;
+    }
+
+    this.state.bigFattyGiftClaimed = true;
+    this.state.fairyHeartBonus = 5;
+    this.state.maxHearts = Math.min(11, 3 + (this.state.upgrades?.maxHeartUpgrades || 0) + this.state.fairyHeartBonus);
+    this.state.hearts = this.state.maxHearts;
+    this.state.overworldMessage = "Big Fatty gave you a bonus five hearts.";
+
+    this.bigFattyFairy?.setFillStyle(0xfff0b3, 0.98).setStrokeStyle(2, 0xffcf6e, 1);
+    if (this.secretRoomNodes.length) {
+      const statusNode = this.secretRoomNodes[this.secretRoomNodes.length - 3];
+      statusNode?.setText("+5 hearts claimed");
+    }
+
+    musicManager.playCelebration();
+    musicManager.playSfx("pickup", { throttleMs: 90, gain: 0.07, pitch: 1.12 });
+    this.setStatus("Big Fatty blesses you with +5 bonus hearts.");
+  }
+
   setStatus(text) {
     this.statusText.setText(text);
     this.statusPanel.width = Math.max(420, Math.min(1120, text.length * 11));
@@ -217,6 +311,14 @@ export class OverworldScene extends Phaser.Scene {
   tryInteract() {
     this.syncFinalGateState();
     musicManager.playSfx("interact", { throttleMs: 90, gain: 0.03 });
+
+    if (this.state.finalBossUnlocked && this.secretRoomPortal) {
+      const secretDist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.secretRoomPortal.x, this.secretRoomPortal.y);
+      if (secretDist < 104) {
+        this.claimBigFattyGift();
+        return;
+      }
+    }
 
     if (this.swordPickup) {
       const swordDist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.swordPickup.x, this.swordPickup.y);

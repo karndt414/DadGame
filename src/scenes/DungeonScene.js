@@ -269,13 +269,15 @@ export class DungeonScene extends Phaser.Scene {
         collectedTriviaShrines: {}
       };
     }
+    this.state.fairyHeartBonus ||= 0;
+    this.state.bigFattyGiftClaimed ||= false;
     this.state.upgrades.collectedLootDrops ||= {};
     this.state.upgrades.collectedMemoryEchoes ||= {};
     this.state.upgrades.collectedTriviaShrines ||= {};
     this.unlockedAbilities = this.state.unlockedAbilities;
     this.damageBonus = this.state.upgrades.damageLevel || 0;
     this.cooldownBonus = this.state.upgrades.cooldownLevel || 0;
-    this.state.maxHearts = clamp(3 + (this.state.upgrades.maxHeartUpgrades || 0), 3, 6);
+    this.state.maxHearts = clamp(3 + (this.state.upgrades.maxHeartUpgrades || 0) + (this.state.fairyHeartBonus || 0), 3, 11);
     this.enemyLevelMultiplier = 1 + this.dungeonOrderIndex * 0.14;
 
     this.state.hearts = this.state.maxHearts;
@@ -1536,7 +1538,7 @@ export class DungeonScene extends Phaser.Scene {
       if ((this.state.upgrades.maxHeartUpgrades || 0) < 3) {
         this.state.upgrades.maxHeartUpgrades += 1;
       }
-      this.state.maxHearts = clamp(3 + this.state.upgrades.maxHeartUpgrades, 3, 6);
+      this.state.maxHearts = clamp(3 + this.state.upgrades.maxHeartUpgrades + (this.state.fairyHeartBonus || 0), 3, 11);
       this.state.hearts = clamp(this.state.hearts + 1, 1, this.state.maxHearts);
       this.createHeartsUi();
       this.setStatus(`${LOOT_TYPES[type].label}: Max hearts now ${this.state.maxHearts}.`);
@@ -1677,6 +1679,7 @@ export class DungeonScene extends Phaser.Scene {
     }
 
     const activeTriviaShrine = this.currentTriviaShrine;
+    const memoryItem = activeTriviaShrine?.memoryItem || null;
     const rewardType = this.getTriviaRewardType(this.currentQuestion, selectedIndex);
     this.applyCapsuleReward(rewardType);
     musicManager.playSfx("uiConfirm", { throttleMs: 100, gain: 0.05, pitch: 1.08 });
@@ -1693,6 +1696,14 @@ export class DungeonScene extends Phaser.Scene {
     }
 
     this.closeQuestion();
+
+    if (memoryItem) {
+      runMemorySequence(this, "Memory Shrine", [memoryItem], () => {
+        this.setStatus("Memory shrine answered. Powerup granted.");
+      });
+    } else {
+      this.setStatus("Memory shrine answered. Powerup granted.");
+    }
   }
 
   closeQuestion() {

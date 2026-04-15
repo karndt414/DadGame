@@ -28,6 +28,8 @@ const gameState = {
     shieldCharges: 0,
     secretMemories: []
   },
+  fairyHeartBonus: 0,
+  bigFattyGiftClaimed: false,
   memoryKeysCollected: 0,
   finalBossUnlocked: false,
   overworldMessage: "Three memory dungeons await."

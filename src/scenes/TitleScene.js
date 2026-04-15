@@ -23,6 +23,8 @@ export class TitleScene extends Phaser.Scene {
       shieldCharges: 0,
       secretMemories: []
     };
+    state.fairyHeartBonus = 0;
+    state.bigFattyGiftClaimed = false;
     state.memoryKeysCollected = 3;
     state.finalBossUnlocked = true;
     state.overworldMessage = "Boss rush: skipping straight to the final fight.";
