@@ -71,14 +71,62 @@ const ENEMY_AI_PROFILE = {
 };
 
 const BOSS_TUNING = {
-  hpScale: 0.78,
-  baseSpeed: 78,
-  dashSpeed: 195,
+  hpScale: 1.2,
+  baseSpeed: 84,
+  dashSpeed: 210,
   dashDurationMs: 280,
-  dashCooldownMs: 3400,
-  pulseCooldownMs: 5000,
-  pulseRadius: 165,
-  contactCooldownMs: 1000
+  dashCooldownMs: 3200,
+  pulseCooldownMs: 4300,
+  pulseRadius: 172,
+  contactCooldownMs: 900
+};
+
+const BOSS_FLAVOR_PROFILES = {
+  father_childhood: {
+    dashSpeedMult: 0.92,
+    dashCooldownMult: 1.03,
+    pulseCooldownMult: 0.9,
+    pulseRadiusBonus: 10,
+    volleyMinPhase: 2,
+    volleyShotBonus: 1,
+    volleySpreadBonus: 0.16,
+    volleySpeedBonus: 8,
+    pulseRingShots: 4,
+    pulseRingSpeed: 175,
+    pulseRingDamage: 1,
+    pulseRingColor: 0xffc989,
+    pulseTint: 0xffc56e
+  },
+  my_childhood: {
+    dashSpeedMult: 1.18,
+    dashCooldownMult: 0.78,
+    pulseCooldownMult: 1.12,
+    pulseRadiusBonus: -8,
+    volleyMinPhase: 3,
+    volleyShotBonus: 0,
+    volleySpreadBonus: -0.08,
+    volleySpeedBonus: 0,
+    pulseRingShots: 0,
+    pulseRingSpeed: 0,
+    pulseRingDamage: 0,
+    pulseRingColor: 0,
+    pulseTint: 0xff9ea1
+  },
+  modern_day: {
+    dashSpeedMult: 0.98,
+    dashCooldownMult: 0.95,
+    pulseCooldownMult: 0.78,
+    pulseRadiusBonus: 30,
+    volleyMinPhase: 2,
+    volleyShotBonus: 0,
+    volleySpreadBonus: 0.08,
+    volleySpeedBonus: 18,
+    pulseRingShots: 6,
+    pulseRingSpeed: 205,
+    pulseRingDamage: 1,
+    pulseRingColor: 0x9fe8ff,
+    pulseTint: 0x9fe8ff
+  }
 };
 
 /** Mini-boss texture per dungeon (final boss uses boss-memory-warden). */
@@ -227,6 +275,8 @@ export class DungeonScene extends Phaser.Scene {
     this.bossDashCooldown = 0;
     this.bossPulseCooldown = 0;
     this.bossContactCooldown = 0;
+    this.bossVolleyCooldown = 0;
+    this.bossPhase = 1;
     this.wallBodies = null;
     this.wallRects = [];
     this.roomZones = [];
@@ -303,6 +353,8 @@ export class DungeonScene extends Phaser.Scene {
     this.bossDashCooldown = 0;
     this.bossPulseCooldown = 0;
     this.bossContactCooldown = 0;
+    this.bossVolleyCooldown = 0;
+    this.bossPhase = 1;
     this.wallBodies = null;
     this.wallRects = [];
     this.roomZones = [];
@@ -736,7 +788,7 @@ export class DungeonScene extends Phaser.Scene {
 
     for (let i = 0; i < this.state.maxHearts; i += 1) {
       const key = i < this.state.hearts ? "ui-heart-full" : "ui-heart-empty";
-      const icon = this.add.image(34 + i * 34, 68, key).setDisplaySize(28, 28).setOrigin(0.5).setDepth(120).setScrollFactor(0);
+      const icon = this.add.image(34 + i * 34, 78, key).setDisplaySize(28, 28).setOrigin(0.5).setDepth(120).setScrollFactor(0);
       this.heartIcons.push(icon);
     }
   }
@@ -964,28 +1016,43 @@ export class DungeonScene extends Phaser.Scene {
     const toPlayer = new Phaser.Math.Vector2(target.x - this.boss.x, target.y - this.boss.y);
     const dist = toPlayer.length();
     const dir = dist > 0.001 ? toPlayer.clone().normalize() : new Phaser.Math.Vector2(1, 0);
+    const maxHp = Math.max(1, this.boss.maxHp || this.boss.hp || 1);
+    const hpRatio = this.boss.hp / maxHp;
+    const nextPhase = hpRatio < 0.3 ? 3 : hpRatio < 0.6 ? 2 : 1;
+    const flavor = this.bossFlavor || BOSS_FLAVOR_PROFILES[this.dungeon?.id] || BOSS_FLAVOR_PROFILES.father_childhood;
+
+    if (nextPhase !== this.bossPhase) {
+      this.bossPhase = nextPhase;
+      musicManager.playSfx("bossPulse", { throttleMs: 180, gain: 0.05, pitch: 0.82 + this.bossPhase * 0.08 });
+      this.boss.setTint(this.bossPhase === 3 ? 0xff8a8a : this.bossPhase === 2 ? flavor.pulseTint : 0xff9ea1);
+      this.time.delayedCall(180, () => this.boss?.clearTint());
+    }
+
+    const speedScale = 1 + (this.bossPhase - 1) * 0.12;
+    const dashSpeed = BOSS_TUNING.dashSpeed * speedScale * flavor.dashSpeedMult;
+    const baseSpeed = BOSS_TUNING.baseSpeed * speedScale;
 
     if (now < this.bossDashUntil) {
-      this.boss.body.setVelocity(dir.x * BOSS_TUNING.dashSpeed, dir.y * BOSS_TUNING.dashSpeed);
+      this.boss.body.setVelocity(dir.x * dashSpeed, dir.y * dashSpeed);
     } else if (now > this.bossDashCooldown) {
       this.bossDashUntil = now + BOSS_TUNING.dashDurationMs;
-      this.bossDashCooldown = now + BOSS_TUNING.dashCooldownMs;
+      this.bossDashCooldown = now + Math.max(2200, (BOSS_TUNING.dashCooldownMs - this.bossPhase * 260) * flavor.dashCooldownMult);
       musicManager.playSfx("bossDash", { throttleMs: 280, gain: 0.055, pitch: 0.78 });
       this.boss.setTint(0xff9ea1);
       this.time.delayedCall(300, () => this.boss?.clearTint());
     } else {
-      this.boss.body.setVelocity(dir.x * BOSS_TUNING.baseSpeed, dir.y * BOSS_TUNING.baseSpeed);
+      this.boss.body.setVelocity(dir.x * baseSpeed, dir.y * baseSpeed);
     }
 
     if (dist < 44 && now > this.bossContactCooldown) {
       this.takeDamage(1);
-      this.bossContactCooldown = now + BOSS_TUNING.contactCooldownMs;
+      this.bossContactCooldown = now + Math.max(700, BOSS_TUNING.contactCooldownMs - this.bossPhase * 75);
     }
 
     if (now > this.bossPulseCooldown) {
-      this.bossPulseCooldown = now + BOSS_TUNING.pulseCooldownMs;
+      this.bossPulseCooldown = now + Math.max(2800, (BOSS_TUNING.pulseCooldownMs - this.bossPhase * 320) * flavor.pulseCooldownMult);
       musicManager.playSfx("bossPulse", { throttleMs: 260, gain: 0.06, pitch: 0.85 });
-      const pulse = this.add.circle(this.boss.x, this.boss.y, 28, 0xff8f8f, 0.28);
+      const pulse = this.add.circle(this.boss.x, this.boss.y, 28, flavor.pulseTint, 0.28);
       this.tweens.add({
         targets: pulse,
         scale: 3.5,
@@ -994,10 +1061,62 @@ export class DungeonScene extends Phaser.Scene {
         onComplete: () => pulse.destroy()
       });
 
-      if (dist < BOSS_TUNING.pulseRadius) {
+      if (dist < BOSS_TUNING.pulseRadius + flavor.pulseRadiusBonus) {
         this.takeDamage(1);
       }
+
+      if (flavor.pulseRingShots > 0) {
+        const ringStep = (Math.PI * 2) / flavor.pulseRingShots;
+        for (let i = 0; i < flavor.pulseRingShots; i += 1) {
+          const angle = ringStep * i + (this.bossPhase - 1) * 0.2;
+          this.spawnEnemyProjectile(
+            this.boss.x,
+            this.boss.y,
+            new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)),
+            flavor.pulseRingSpeed + this.bossPhase * 10,
+            flavor.pulseRingDamage,
+            flavor.pulseRingColor,
+            1700,
+            5
+          );
+        }
+      }
     }
+
+    if (this.bossPhase >= flavor.volleyMinPhase && now > this.bossVolleyCooldown) {
+      this.spawnBossProjectileVolley(now, this.bossPhase);
+      this.bossVolleyCooldown = now + (this.bossPhase === 3 ? 2400 : 3200);
+    }
+  }
+
+  spawnBossProjectileVolley(now, phase) {
+    if (!this.boss || !this.player) {
+      return;
+    }
+
+    const flavor = this.bossFlavor || BOSS_FLAVOR_PROFILES[this.dungeon?.id] || BOSS_FLAVOR_PROFILES.father_childhood;
+    musicManager.playSfx("enemyShoot", { throttleMs: 180, gain: 0.045, pitch: 0.82 + phase * 0.06 });
+    const baseAngle = Phaser.Math.Angle.Between(this.boss.x, this.boss.y, this.player.x, this.player.y);
+    const shotCount = (phase === 3 ? 5 : 3) + flavor.volleyShotBonus;
+    const spread = (phase === 3 ? 0.92 : 0.58) + flavor.volleySpreadBonus;
+    const speed = 235 + phase * 18 + flavor.volleySpeedBonus;
+    const damage = phase === 3 ? 2 : 1;
+
+    for (let i = 0; i < shotCount; i += 1) {
+      const offset = shotCount === 1 ? 0 : (i / (shotCount - 1) - 0.5) * spread;
+      const angle = baseAngle + offset;
+      const direction = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle));
+      this.spawnEnemyProjectile(this.boss.x, this.boss.y, direction, speed, damage, phase === 3 ? 0xff8d8d : 0xffc989, 1800, phase === 3 ? 7 : 6);
+    }
+
+    const flash = this.add.circle(this.boss.x, this.boss.y, 20, phase === 3 ? 0xff8d8d : 0xffc989, 0.28);
+    this.tweens.add({
+      targets: flash,
+      scale: 2.2,
+      alpha: 0,
+      duration: 220,
+      onComplete: () => flash.destroy()
+    });
   }
 
   onAttack(pointer) {
@@ -1284,6 +1403,8 @@ export class DungeonScene extends Phaser.Scene {
     const shotDamage = Math.max(2, Math.round((2 + (this.abilityTier >= 4 ? 1 : 0)) * (1 + this.getDamageScaleBonus())));
     const dirX = Math.cos(angle);
     const dirY = Math.sin(angle);
+    const shotLine = new Phaser.Geom.Line(this.player.x, this.player.y, this.player.x + dirX * distance, this.player.y + dirY * distance);
+    const blockedByWall = this.wallRects?.some((wallRect) => Phaser.Geom.Intersects.LineToRectangle(shotLine, wallRect));
 
     const hitAlongPath = (target) => {
       const relX = target.x - this.player.x;
@@ -1295,6 +1416,10 @@ export class DungeonScene extends Phaser.Scene {
       const perp = Math.abs(relX * dirY - relY * dirX);
       return perp < shotWidth;
     };
+
+    if (blockedByWall) {
+      return;
+    }
 
     this.enemies = this.enemies.filter((enemy) => {
       if (!hitAlongPath(enemy)) {
@@ -1337,6 +1462,7 @@ export class DungeonScene extends Phaser.Scene {
     const bossX = anchor.x;
     const bossY = anchor.y;
     const bossKey = DUNGEON_BOSS_TEXTURE[this.dungeon?.id] || "boss-memory-warden";
+    this.bossFlavor = BOSS_FLAVOR_PROFILES[this.dungeon?.id] || BOSS_FLAVOR_PROFILES.father_childhood;
     this.boss = this.physics.add.image(bossX, bossY, bossKey);
     this.boss.setDisplaySize(bossKey === "boss-vault-tyrant" ? 92 : 88, bossKey === "boss-vault-tyrant" ? 92 : 88);
     this.boss.clearTint();
@@ -1344,11 +1470,14 @@ export class DungeonScene extends Phaser.Scene {
     if (this.wallBodies) {
       this.physics.add.collider(this.boss, this.wallBodies);
     }
-    this.boss.hp = Math.max(8, Math.round((this.dungeon?.bossHp || 16) * BOSS_TUNING.hpScale));
+    this.boss.hp = Math.max(9, Math.round((this.dungeon?.bossHp || 16) * BOSS_TUNING.hpScale));
+    this.boss.maxHp = this.boss.hp;
     this.bossDashUntil = 0;
     this.bossDashCooldown = this.time.now + 2400;
     this.bossPulseCooldown = this.time.now + 2600;
     this.bossContactCooldown = this.time.now;
+    this.bossVolleyCooldown = this.time.now + 1800;
+    this.bossPhase = 1;
 
     this.bossHpText = this.add.text(this.scale.width - 44, 20, "", {
       fontSize: "22px",
@@ -1605,6 +1734,7 @@ export class DungeonScene extends Phaser.Scene {
     musicManager.playSfx("uiConfirm", { throttleMs: 120, gain: 0.04 });
     this.overlayBlock = this.add
       .rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x000000, 0.65)
+      .setDepth(250)
       .setScrollFactor(0);
 
     this.currentTriviaShrine = shrine;
@@ -1618,25 +1748,25 @@ export class DungeonScene extends Phaser.Scene {
     const title = this.add.text(120, 120, "Memory Shrine", {
       fontSize: "36px",
       color: "#f0e6be"
-    }).setScrollFactor(0);
+    }).setDepth(260).setScrollFactor(0);
 
     const prompt = this.add.text(120, 180, this.currentQuestion.prompt, {
       fontSize: "28px",
       color: "#f6f6f1",
       wordWrap: { width: this.scale.width - 240 }
-    }).setScrollFactor(0);
+    }).setDepth(260).setScrollFactor(0);
 
     const choiceNodes = this.currentQuestion.choices.map((choice, idx) => {
       return this.add.text(140, 260 + idx * 52, `${idx + 1}. ${choice}`, {
         fontSize: "25px",
         color: "#d8e3ce"
-      }).setScrollFactor(0);
+      }).setDepth(260).setScrollFactor(0);
     });
 
     const footer = this.add.text(120, 520, "Pick a blessing: each answer grants a different powerup", {
       fontSize: "22px",
       color: "#d1d4ca"
-    }).setScrollFactor(0);
+    }).setDepth(260).setScrollFactor(0);
 
     this.questionNodes = [title, prompt, ...choiceNodes, footer];
 

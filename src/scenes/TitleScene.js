@@ -61,6 +61,13 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
+      .text(width / 2, 220, "Find the crystals to gain powers!", {
+        fontSize: "28px",
+        color: "#f2f4ec"
+      })
+      .setOrigin(0.5,-1.5);
+
+    this.add
       .text(width / 2, 360, "Controls: WASD move, E interact", {
         fontSize: "22px",
         color: "#d5d8ce",

@@ -270,16 +270,6 @@ export class OverworldScene extends Phaser.Scene {
 
     const sparkleA = this.add.circle(roomX - 44, roomY - 42, 5, 0xeaffb9, 0.95);
     const sparkleB = this.add.circle(roomX + 34, roomY + 10, 4, 0x9ef8ff, 0.9);
-    const warpHint = this.add
-      .text(1258, 356, "Touch the seam\nto reach the fountain", {
-        fontSize: "16px",
-        color: "#e8ffe9",
-        stroke: "#000000",
-        strokeThickness: 2,
-        align: "center",
-        wordWrap: { width: 140 }
-      })
-      .setOrigin(0.5);
 
     [
       roomFrame,
@@ -297,7 +287,6 @@ export class OverworldScene extends Phaser.Scene {
       status,
       sparkleA,
       sparkleB,
-      warpHint
     ].forEach((node) => {
       this.secretRoomNodes.push(node);
     });
@@ -358,7 +347,7 @@ export class OverworldScene extends Phaser.Scene {
       return;
     }
 
-    this.swordPickup = this.add.image(640, 560, "fx-slash-lv1").setDisplaySize(74, 36).setDepth(90);
+    this.swordPickup = this.add.image(640, 576, "fx-slash-lv1").setDisplaySize(74, 36).setDepth(90);
     this.swordPickup.setTint(0xf5e6b8);
     this.tweens.add({
       targets: this.swordPickup,
@@ -369,7 +358,7 @@ export class OverworldScene extends Phaser.Scene {
     });
 
     this.swordPrompt = this.add
-      .text(640, 528, "Press E to equip the sword", {
+      .text(640, 544, "Press E to equip the sword", {
         fontSize: "20px",
         color: "#f5e6b8",
         stroke: "#000000",
@@ -403,7 +392,7 @@ export class OverworldScene extends Phaser.Scene {
       repeat: 4
     });
 
-    this.time.delayedCall(5000, () => {
+    this.time.delayedCall(3000, () => {
       this.swordHintNodes.forEach((node) => node.destroy());
       this.swordHintNodes = [];
     });
@@ -434,7 +423,7 @@ export class OverworldScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     this.player.setVisible(false);
 
-    this.time.delayedCall(5000, () => {
+    this.time.delayedCall(3000, () => {
       this.overworldIntroNodes.forEach((node) => node.destroy());
       this.overworldIntroNodes = [];
       this.player.setVisible(true);

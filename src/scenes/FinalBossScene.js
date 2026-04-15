@@ -375,7 +375,7 @@ export class FinalBossScene extends Phaser.Scene {
     this.heartIcons = [];
     for (let i = 0; i < this.state.maxHearts; i += 1) {
       const key = i < this.state.hearts ? "ui-heart-full" : "ui-heart-empty";
-      const icon = this.add.image(34 + i * 34, 32, key).setDisplaySize(28, 28).setOrigin(0.5);
+      const icon = this.add.image(34 + i * 34, 42, key).setDisplaySize(28, 28).setOrigin(0.5);
       this.heartIcons.push(icon);
     }
   }
