@@ -38,7 +38,7 @@ export class TitleScene extends Phaser.Scene {
     const { width, height } = this.scale;
     musicManager.setMood("title");
     musicManager.stopCurrentTrack();
-    musicManager.usingAssetTracks = false;
+    musicManager.usingAssetTracks = true;
     void musicManager.tryStart();
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x1a2217);

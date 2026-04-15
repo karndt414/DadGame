@@ -5,6 +5,7 @@ class MusicManager {
     this.timer = null;
     this.step = 0;
     this.started = false;
+    this.startPromise = null;
     this.mood = "title";
     this.currentTrack = null;
     this.currentTrackBaseVolume = null;
@@ -150,6 +151,19 @@ class MusicManager {
     this.applyOutputVolume();
   }
 
+  async safeResumeContext() {
+    if (!this.ctx || this.ctx.state !== "suspended") {
+      return true;
+    }
+
+    try {
+      await this.ctx.resume();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   applyOutputVolume() {
     if (this.master) {
       this.master.gain.value = this.masterBaseGain * this.duckFactor;
@@ -165,31 +179,44 @@ class MusicManager {
   }
 
   async tryStart() {
-    this.ensureContext();
-    if (!this.ctx || !this.master) {
-      return;
+    if (this.startPromise) {
+      return this.startPromise;
     }
 
-    if (this.ctx.state === "suspended") {
-      await this.ctx.resume();
-    }
-
-    if (this.started) {
-      return;
-    }
-    this.started = true;
-    this.step = 0;
-    if (this.usingAssetTracks) {
-      const startedTrack = await this.playTrackForMood(this.mood);
-      if (!startedTrack) {
-        const arrangement = this.arrangements[this.mood] || this.arrangements.title;
-        this.startTimer(arrangement.tempoMs || 260);
+    this.startPromise = (async () => {
+      this.ensureContext();
+      if (!this.ctx || !this.master) {
+        return false;
       }
-      return;
-    }
 
-    const arrangement = this.arrangements[this.mood] || this.arrangements.title;
-    this.startTimer(arrangement.tempoMs || 260);
+      if (!(await this.safeResumeContext())) {
+        return false;
+      }
+
+      if (this.started) {
+        return true;
+      }
+      this.started = true;
+      this.step = 0;
+      if (this.usingAssetTracks) {
+        const startedTrack = await this.playTrackForMood(this.mood);
+        if (!startedTrack) {
+          const arrangement = this.arrangements[this.mood] || this.arrangements.title;
+          this.startTimer(arrangement.tempoMs || 260);
+        }
+        return true;
+      }
+
+      const arrangement = this.arrangements[this.mood] || this.arrangements.title;
+      this.startTimer(arrangement.tempoMs || 260);
+      return true;
+    })();
+
+    try {
+      return await this.startPromise;
+    } finally {
+      this.startPromise = null;
+    }
   }
 
   setMood(mood) {
@@ -308,9 +335,7 @@ class MusicManager {
     if (!this.ctx || !this.master) {
       return;
     }
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
+    void this.safeResumeContext();
 
     const now = this.ctx.currentTime;
     const notes = [0, 4, 7, 12];
@@ -334,9 +359,7 @@ class MusicManager {
     }
     this.sfxLastAt[name] = nowMs;
 
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
+    void this.safeResumeContext();
 
     const now = this.ctx.currentTime;
     const vol = options.gain ?? 0.05;
