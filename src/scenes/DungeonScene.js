@@ -204,7 +204,6 @@ export class DungeonScene extends Phaser.Scene {
     this.currentQuestion = null;
     this.questionNodes = [];
     this.overlayBlock = null;
-    this.secretRelic = null;
     this.popupNodes = [];
     this.comboStep = 0;
     this.hudPanel = null;
@@ -286,7 +285,6 @@ export class DungeonScene extends Phaser.Scene {
     this.enemies = [];
     this.boss = null;
     this.shrine = null;
-    this.secretRelic = null;
     this.overlayBlock = null;
     this.popupNodes = [];
     this.triviaShrines = [];
@@ -400,7 +398,6 @@ export class DungeonScene extends Phaser.Scene {
 
     this.input.on("pointerdown", this.onAttack, this);
     this.spawnAbilityCrystal();
-    this.spawnSecretRelic();
     this.spawnMemoryEchoes();
     this.spawnTriviaShrines();
 
@@ -1362,23 +1359,6 @@ export class DungeonScene extends Phaser.Scene {
     this.updateBossHpDisplay();
   }
 
-  spawnSecretRelic() {
-    if (this.state.secretRelicFound) {
-      return;
-    }
-    const anchor = this.getAnchorPoint("relic", 0.9, 0.14);
-    const x = anchor.x;
-    const y = anchor.y;
-    this.secretRelic = this.add.image(x, y, "ui-relic").setDisplaySize(24, 24);
-    this.tweens.add({
-      targets: this.secretRelic,
-      y: this.secretRelic.y - 8,
-      duration: 700,
-      yoyo: true,
-      repeat: -1
-    });
-  }
-
   spawnLootDrops() {
     const roomIds = this.roomZones.map((room) => room.id);
     const lootCount = 5 + this.dungeonOrderIndex;
@@ -1617,15 +1597,6 @@ export class DungeonScene extends Phaser.Scene {
     if (nearbyTriviaShrine) {
       this.openQuestion(nearbyTriviaShrine);
       return;
-    }
-
-    if (this.secretRelic && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.secretRelic.x, this.secretRelic.y) < 55) {
-      this.state.secretRelicFound = true;
-      this.secretRelic.destroy();
-      this.secretRelic = null;
-      runMemorySequence(this, "Secret Memory Found!", SECRET_RELIC_GALLERY, () => {
-        this.setStatus("Secret relic found. Bonus memory unlocked.");
-      });
     }
   }
 

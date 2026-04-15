@@ -51,7 +51,7 @@ const dungeons = [
     popupId: 1,
     rewardAbility: "dodge",
     unlockTier: 2,
-    shrineQuestionIds: ["q02_adventure_game", "q04_prop_crew"]
+    shrineQuestionIds: ["q01_birthday_party", "q02_band"]
   },
   {
     id: "my_childhood",
@@ -65,7 +65,7 @@ const dungeons = [
     popupId: 2,
     rewardAbility: "shoot",
     unlockTier: 3,
-    shrineQuestionIds: ["q01_mini_golf"]
+    shrineQuestionIds: ["q03_colors", "q04_activites"]
   },
   {
     id: "modern_day",
@@ -79,7 +79,7 @@ const dungeons = [
     popupId: 3,
     rewardAbility: "explosion",
     unlockTier: 4,
-    shrineQuestionIds: ["q03_grilling"]
+    shrineQuestionIds: ["q05_traditions", "q06_decades"]
   }
 ];
 

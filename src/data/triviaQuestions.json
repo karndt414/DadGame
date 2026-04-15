@@ -76,12 +76,7 @@
         "30-40",
         "40-50"
       ],
-      "rewards": [
-        "heart",
-        "damage",
-        "shield",
-        "cooldown"
-      ]
+      "rewards": ["heart", "damage", "shield", "cooldown"]
     }
   ]
 }

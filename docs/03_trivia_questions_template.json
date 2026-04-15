@@ -19,50 +19,62 @@
       "rewards": ["heart", "shield", "damage", "cooldown"]
     },
     {
-      "id": "q02_adventure_game",
-      "zone": "father_childhood",
-      "prompt": "Father Childhood Dungeon: which memory tone defines this era?",
+      "id": "q02_band",
+      "zone": "any",
+      "prompt": "What was your favorite marching band show?",
       "choices": [
-        "A classic adventure spirit with discovery and courage",
-        "A futuristic stock market simulation",
-        "A strict exam preparation montage",
-        "A road trip speedrun"
+        "Fly Away",
+        "Uninvited",
+        "Black Sheep",
+        "Sequ1nce (We don't talk about the other one)"
       ],
       "rewards": ["shield", "cooldown", "heart", "damage"]
     },
     {
-      "id": "q03_grilling",
-      "zone": "modern_day",
-      "prompt": "Modern Day Dungeon: what anchors this present-day memory?",
+      "id": "q03_colors",
+      "zone": "any",
+      "prompt": "What is your favorite of these colors?",
       "choices": [
-        "Grilling",
-        "Snowboarding",
-        "Fishing tournament",
-        "Wood carving"
+        "Navy Blue",
+        "Red",
+        "Orange",
+        "Black"
       ],
       "rewards": ["damage", "heart", "cooldown", "shield"]
     },
     {
-      "id": "q04_prop_crew",
-      "zone": "commerce_citadel",
-      "prompt": "Which school activity memory should appear in-game?",
+      "id": "q04_activites",
+      "zone": "any",
+      "prompt": "Which activity of mine was your favorite to watch/be a part of?",
       "choices": [
         "Prop crew for marching band",
-        "Debate club finals",
-        "Chess captain",
-        "Robotics nationals"
+        "Coaching my baseball team",
+        "Cub scout troop leader",
+        "Soccer"
       ],
       "rewards": ["cooldown", "damage", "shield", "heart"]
     },
     {
-      "id": "q05_fill_custom",
+      "id": "q05_traditions",
       "zone": "any",
-      "prompt": "ADD YOUR 5TH MILESTONE QUESTION HERE",
+      "prompt": "What is your favorite tradition/hobby of ours?",
       "choices": [
-        "Choice A",
-        "Choice B",
-        "Choice C",
-        "Choice D"
+        "Video games!",
+        "Survivor with the family",
+        "Holiday celebrations (Christmas, Halloween, etc.)",
+        "Hot Tub Convos"
+      ],
+      "rewards": ["heart", "damage", "shield", "cooldown"]
+    },
+    {
+      "id": "q06_decades",
+      "zone": "any",
+      "prompt": "What was your favorite decade of your life so far?",
+      "choices": [
+        "0-20",
+        "20-30",
+        "30-40",
+        "40-50"
       ],
       "rewards": ["heart", "damage", "shield", "cooldown"]
     }
